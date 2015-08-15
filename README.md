@@ -21,6 +21,9 @@ With php, this repo can be used with the following:
 * Set the global $ROPHEAP variable to an address under the process which the ROP-chain can use for storing arbitrary data(for example, this could be memory where data was sprayed for non-ROP-chain data, since that data isn't needed anymore at this point).
 * Call generate_ropchain().
 * The ROP-chain data can now be used for generating the final html/js, for example: "var ropchain = unescape($ROPCHAIN);"
+* This can be used before the above ROP-chain data, for use as a ROP NOP-sled: "unescape($NOPSLEDROP);"
+* This can be used for spraying the stack-pivot gadget address, like for vtable funcptrs: "unescape($STACKPIVOT);"
+* This can be used when the exploit requires using the "pop {pc}" gadget: "$somestr.= genu32_unicode($POPPC);"
 
 # Configuration
 See above regarding the cfg file.
