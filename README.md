@@ -1,7 +1,7 @@
 This repo is for intended for any 3DS title which has some form of web browser. This repo is for generating ROP-chains for use with the previously mentioned targets: no browser exploit(s) are contained in this repo. Browser exploits seperate from this repo can use this for the actual ROP-chain + any required ROP gadgets etc.
 
 # Supported titles and versions
-The versions below are listed in the following format: browserver titlever sysver.
+The versions below are listed in the following format: browserver titlever sysver. Which browserver(target title + version of the title) to use is automatically determined by checking the user-agent. Due to this, when accessing hax with this, the New3DS system web-browser must be set to use the normal user-agent, not the mobile user-agent(the mobile user-agent is the same for all versions).
 
 Old3DS system Internet Browser(spider) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions_2):
 * 1.7498 v2050/4.0.0-7
@@ -19,7 +19,7 @@ New3DS system Internet Browser(SKATER) (see also http://3dbrew.org/wiki/Internet
 With php, this repo can be used with the following:
 * Include config based on browserhax_cfg_example.php, see that file for details. Include 3dsbrowserhax_common.php.
 * Set the global $ROPHEAP variable to an address under the process which the ROP-chain can use for storing arbitrary data(for example, this could be memory where data was sprayed for non-ROP-chain data, since that data isn't needed anymore at this point).
-* Call generate_ropchain().
+* Call generate_ropchain(). This generates a ROP-chain which can be included in JS via the $ROPCHAIN global variable. To generate a binary-only ROP-chain instead, set the $generatebinrop global variable to value 1 before calling generate_ropchain().
 * The ROP-chain data can now be used for generating the final html/js, for example: "var ropchain = unescape($ROPCHAIN);"
 * This can be used before the above ROP-chain data, for use as a ROP NOP-sled: "unescape($NOPSLEDROP);"
 * This can be used for spraying the stack-pivot gadget address, like for vtable funcptrs: "unescape($STACKPIVOT);"

