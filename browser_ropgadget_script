@@ -13,12 +13,13 @@
 
 --patterndata=3dd9c6c8a88e2ee07f9d0debcb5ef3b5ff142f0b3c6548616418bb749bb4d860 --patternsha256size=0x1c "--plainout=$MEMCPY = "
 
+--patterndata=429c407642c36bdf169d167bf3efc7a0eb4cf5052a08a97fc56ecbcfdb96f1b8 --patternsha256size=0x18 "--plainout=$svcGetProcessId = "
+--patterndata=1eb08d7a2ad69eeccaae5b86308ba82a7eed4e7b647eaca67b9da5db8dd00d9a --patternsha256size=0x8 "--plainout=$svcSendSyncRequest = "
 --patterndata=830c604f4c125a2e0bf80a8716809e21a75b0cd93e7a2c3a4bf4b096117f195c --patternsha256size=0x10 "--plainout=$svcControlMemory = "
 --patterndata=a424f8b938aa4919842c18cf173c854c6412bacc5bf48ff0abbb7164e69ec507 --patternsha256size=0x8 "--plainout=$svcSleepThread = "
 
---patterndata=366bba65c8afca3ec78dd6272bb147fa894866e38bc85642c68fa491c3f7905f --patternsha256size=0x18 "--plainout=$srv_GetServiceHandle = "
-
 --patterndata=406e130dfe0a99ba64c16ac6ec4a53355cb36f090647b73c5382ea180c88e72c --patternsha256size=0x30 "--plainout=$GXLOW_CMD4 = "
+--patterndata=366bba65c8afca3ec78dd6272bb147fa894866e38bc85642c68fa491c3f7905f --patternsha256size=0x18 "--plainout=$srv_GetServiceHandle = "
 
 --patterndata=e25b7bfb96863f69fcbef8fdad176da9dff3e72502c1f2ca837115b3fc290212 --patternsha256size=0x10 "--plainout=$FS_MOUNTSDMC = "
 
