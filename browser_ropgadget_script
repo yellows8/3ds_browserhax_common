@@ -25,6 +25,7 @@
 --patterndata=0cb952fc1b134ccc2efab97be49107cea1eaead8acb5cb326fe849b204e5a43c --patterndatamask=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000ff --patternsha256size=0x2c "--plainout=$GSP_FLUSHDCACHE = "
 # The above GSP_FLUSHDCACHE line is SKATER-only.
 --patterndata=b31ab17d001a483c67b52cd4a725fdaf0ab16a897724e7c9e09de2021ad55dc9 --patterndatamask=ffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffff000000ffffffffff --patternsha256size=0x2c "--plainout=$GSP_WRITEHWREGS = "
+--patterndata=9c6e35e94730b954546f6ef0cd2dc446a7254c1949fcdf1e4c6835f21229c99b --patterndatamask=ffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffff --patternsha256size=0x20 --dataload=0x24 "--plainout=$GSPGPU_SERVHANDLEADR = "
 
 --patterndata=e25b7bfb96863f69fcbef8fdad176da9dff3e72502c1f2ca837115b3fc290212 --patternsha256size=0x10 "--plainout=$FS_MOUNTSDMC = "
 
