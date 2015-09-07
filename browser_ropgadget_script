@@ -33,5 +33,6 @@
 --patterndata=d2dfec7874a22d753a2715e6ad640e0572d6b3d86d12792762d259ff0216705e --patternsha256size=0x18 "--plainout=$IFile_Close = "
 # The above IFile_Close line is SKATER-only.
 --patterndata=7c1b921157c09b6c974ed6c215e00d4ade20467835b0db46a38a138f03bbcaf5 --patternsha256size=0x20 "--plainout=$IFile_Read = "
+--patterndata=da7ca72845368ccfc7f4634e07d559bf055622473730f9503f819fa1aa8482f7 --patternsha256size=0x54 "--plainout=$IFile_Write = "
 
 --patterndata=842555e8c82550c2c431530590fe143174ca0d28d1e35a941b87cdee5e5fd465 --patternsha256size=0x4 "--plainout=$POPPC = "
