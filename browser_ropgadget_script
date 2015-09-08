@@ -37,4 +37,10 @@
 --patterndata=7c1b921157c09b6c974ed6c215e00d4ade20467835b0db46a38a138f03bbcaf5 --patternsha256size=0x20 "--plainout=$IFile_Read = "
 --patterndata=da7ca72845368ccfc7f4634e07d559bf055622473730f9503f819fa1aa8482f7 --patternsha256size=0x54 "--plainout=$IFile_Write = "
 
+--patterndata=d13c71c0bb6ea3b821275da0eb8f7af5a63356b9795442c24d660198246b94c8 --patterndatamask=ffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff --patternsha256size=0x6c "--plainout=$FS_DELETEFILE = "
+
+--patterndata=51c3aad08eead6e993d94101aba32f31dc68ff9462d0ddbecb913146fa268017 --patterndatamask=ffffffffffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffff --patternsha256size=0x2c "--plainout=$FSFILEIPC_CLOSE = "
+--patterndata=efe039c384f832e9400b62868cea2332e04fe71fb2fcd9fab3bb686dd4bbe048 --patterndatamask=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff --patternsha256size=0x58 "--plainout=$FSFILEIPC_READ = "
+--patterndata=4ed2f27deba698703ae1e4b9910655aab6d695a1882a2f9ab34e41dfe5f29a3a --patterndatamask=ffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff --patternsha256size=0x38 "--plainout=$FSFILEIPC_GETSIZE = "
+
 --patterndata=842555e8c82550c2c431530590fe143174ca0d28d1e35a941b87cdee5e5fd465 --patternsha256size=0x4 "--plainout=$POPPC = "
