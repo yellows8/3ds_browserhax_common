@@ -13,8 +13,7 @@
 
 --patterndata=3dd9c6c8a88e2ee07f9d0debcb5ef3b5ff142f0b3c6548616418bb749bb4d860 --patternsha256size=0x1c "--plainout=$MEMCPY = "
 
---patterndata=366bba65c8afca3ec78dd6272bb147fa894866e38bc85642c68fa491c3f7905f --patternsha256size=0x18 "--plainout=$srv_GetServiceHandle = "
-# The above srv_GetServiceHandle line is SKATER-only.
+--patterndata=883dc75d232f768ecafc1d6fd569c3b8301b1eda5ef5d52392872eed9be7f015 --patterndatamask=ffffffff00ffffffffffffffffffffff --patternsha256size=0x18 "--plainout=$srv_GetServiceHandle = "
 
 --patterndata=429c407642c36bdf169d167bf3efc7a0eb4cf5052a08a97fc56ecbcfdb96f1b8 --patternsha256size=0x18 "--plainout=$svcGetProcessId = "
 --patterndata=1eb08d7a2ad69eeccaae5b86308ba82a7eed4e7b647eaca67b9da5db8dd00d9a --patternsha256size=0x8 "--plainout=$svcSendSyncRequest = "
