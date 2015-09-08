@@ -34,6 +34,7 @@
 # The above IFile_Close line is SKATER-only.
 --patterndata=7c1b921157c09b6c974ed6c215e00d4ade20467835b0db46a38a138f03bbcaf5 --patternsha256size=0x20 "--plainout=$IFile_Read = "
 --patterndata=da7ca72845368ccfc7f4634e07d559bf055622473730f9503f819fa1aa8482f7 --patternsha256size=0x54 "--plainout=$IFile_Write = "
---patterndata=af995621aceae5e77e6794f4b1925a421e7040f2588bd19e79134eca0835500a --patterndatamask=ffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff --patternsha256size=0x58 "--plainout=$IFile_GetSize= "
+--patterndata=af995621aceae5e77e6794f4b1925a421e7040f2588bd19e79134eca0835500a --patterndatamask=ffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff --patternsha256size=0x58 "--plainout=$IFile_GetSize = "
+--patterndata=b3b7b5e5043302d1aa6f40af86fd0299a462cc8264fe1db58ac29218bae0984c --patternsha256size=0x40 "--plainout=$IFile_Seek = "
 
 --patterndata=842555e8c82550c2c431530590fe143174ca0d28d1e35a941b87cdee5e5fd465 --patternsha256size=0x4 "--plainout=$POPPC = "
