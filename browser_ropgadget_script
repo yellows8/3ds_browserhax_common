@@ -25,6 +25,7 @@
 --patterndata=0cb952fc1b134ccc2efab97be49107cea1eaead8acb5cb326fe849b204e5a43c --patterndatamask=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000ff --patternsha256size=0x2c "--plainout=$GSP_FLUSHDCACHE = "
 # The above GSP_FLUSHDCACHE line is SKATER-only.
 --patterndata=b31ab17d001a483c67b52cd4a725fdaf0ab16a897724e7c9e09de2021ad55dc9 --patterndatamask=ffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffff000000ffffffffff --patternsha256size=0x2c "--plainout=$GSP_WRITEHWREGS = "
+# The above GSP_WRITEHWREGS line is SKATER-only.
 --patterndata=9c6e35e94730b954546f6ef0cd2dc446a7254c1949fcdf1e4c6835f21229c99b --patterndatamask=ffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffff --patternsha256size=0x20 --dataload=0x24 "--plainout=$GSPGPU_SERVHANDLEADR = "
 
 --patterndata=e25b7bfb96863f69fcbef8fdad176da9dff3e72502c1f2ca837115b3fc290212 --patternsha256size=0x10 "--plainout=$FS_MOUNTSDMC = "
@@ -36,8 +37,10 @@
 --patterndata=b3b7b5e5043302d1aa6f40af86fd0299a462cc8264fe1db58ac29218bae0984c --patternsha256size=0x40 "--plainout=$IFile_Seek = "
 --patterndata=7c1b921157c09b6c974ed6c215e00d4ade20467835b0db46a38a138f03bbcaf5 --patternsha256size=0x20 "--plainout=$IFile_Read = "
 --patterndata=da7ca72845368ccfc7f4634e07d559bf055622473730f9503f819fa1aa8482f7 --patternsha256size=0x54 "--plainout=$IFile_Write = "
+# The above IFile_Write line is SKATER-only.
 
 --patterndata=d13c71c0bb6ea3b821275da0eb8f7af5a63356b9795442c24d660198246b94c8 --patterndatamask=ffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff --patternsha256size=0x6c "--plainout=$FS_DELETEFILE = "
+# The above FS_DELETEFILE line is SKATER-only.
 
 --patterndata=51c3aad08eead6e993d94101aba32f31dc68ff9462d0ddbecb913146fa268017 --patterndatamask=ffffffffffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffff --patternsha256size=0x2c "--plainout=$FSFILEIPC_CLOSE = "
 --patterndata=efe039c384f832e9400b62868cea2332e04fe71fb2fcd9fab3bb686dd4bbe048 --patterndatamask=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff --patternsha256size=0x58 "--plainout=$FSFILEIPC_READ = "
