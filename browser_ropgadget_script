@@ -14,8 +14,6 @@
 
 --patterndata=ec41c58fcd53d6064a14886baed5a60506e20a59d322b1da729d03594822390e --patternsha256size=0x24 "--plainout=$ROP_WRITETHREADSTORAGEPTR_TOR4R5 = "
 
---patterndata=3dd9c6c8a88e2ee07f9d0debcb5ef3b5ff142f0b3c6548616418bb749bb4d860 --patternsha256size=0x1c "--plainout=$MEMCPY = "
-
 --patterndata=883dc75d232f768ecafc1d6fd569c3b8301b1eda5ef5d52392872eed9be7f015 --patterndatamask=ffffffff00ffffffffffffffffffffff --patternsha256size=0x18 "--plainout=$srv_GetServiceHandle = "
 
 --patterndata=429c407642c36bdf169d167bf3efc7a0eb4cf5052a08a97fc56ecbcfdb96f1b8 --patternsha256size=0x18 "--plainout=$svcGetProcessId = "
