@@ -1,4 +1,5 @@
 --patterndata=e362c15aa4b748d62a40e0d02576e087635e533ebf78b769d7b74af0ff9544d9 --patternsha256size=0x1c "--plainout=$STACKPIVOT_ADR = "
+--patterndata=9052da727bce68f1e46c09c9841f1238ad70e8e7d6bea5ccee863cba1993d6bb --patterndatamask=ffffffffffffffff000000ffffffffffffffffff --patternsha256size=0x14 "--plainout=$COND_THROWFATALERR = "
 
 --patterndata=e15dbf42337b5aa311c9d6458c5b9f92fa5b69b53076184c395b97329428d1cc --patternsha256size=0x4 "--plainout=$ROP_POP_R0R6PC = "
 --patterndata=6c5c5b5a05dbb33c3f2d4d81f16259710ec211f142437db1b4dc85141d3952e2 --patternsha256size=0x4 "--plainout=$ROP_POP_R0R8PC = "
