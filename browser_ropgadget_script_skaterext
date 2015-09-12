@@ -1,0 +1,5 @@
+--patterndata=0cb952fc1b134ccc2efab97be49107cea1eaead8acb5cb326fe849b204e5a43c --patterndatamask=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000ff --patternsha256size=0x2c "--plainout=$GSP_FLUSHDCACHE = "
+--patterndata=b31ab17d001a483c67b52cd4a725fdaf0ab16a897724e7c9e09de2021ad55dc9 --patterndatamask=ffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffff000000ffffffffff --patternsha256size=0x2c "--plainout=$GSP_WRITEHWREGS = "
+
+--patterndata=d2dfec7874a22d753a2715e6ad640e0572d6b3d86d12792762d259ff0216705e --patternsha256size=0x18 "--plainout=$IFile_Close = "
+--patterndata=da7ca72845368ccfc7f4634e07d559bf055622473730f9503f819fa1aa8482f7 --patternsha256size=0x54 "--plainout=$IFile_Write = "
