@@ -5,3 +5,5 @@
 --patterndata=3250725b7c148ee1c4ce025b06ebd6f0f6a9aa230eaf94eeb1ee382d86ad4fef --patternsha256size=0x54 "--plainout=$IFile_Write = "
 
 --patterndata=cea0db90c00cd119d24d0ac603d7cf6469e981fc1f3071b38cbe3b9d409fc3cf --patternsha256size=0x50 "--plainout=$OPENFILEDIRECTLY_WRAP = "
+
+--patterndata=0df225cf984b987f813a2b84de79e8e38c2934e381f7f79092273ad17bb9b79e --patternsha256size=0x8 "--plainout=$ROP_STMR0_R0PC = "
