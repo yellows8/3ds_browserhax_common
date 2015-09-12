@@ -1,4 +1,4 @@
-./browser_ropaddrgen_common.sh $1 $1
+./browser_ropaddrgen_common.sh $1 $1 wkc_
 ropgadget_patternfinder $1/*exefs/code.bin --script=browser_ropgadget_script_skaterext --baseaddr=0x100000 --patterntype=sha256
 echo -n -e "\n"
 ropgadget_patternfinder $1/webkit.cro --patterntype=sha256 --patterndata=f3e5d9688528c7d3fc7aa5df10758995a8c1c93e03576514501663672083e3e0 --patternsha256size=0x4 "--plainout=\$ROP_POP_R0IPPC = \$WEBKITCRO_MAPADR+"
