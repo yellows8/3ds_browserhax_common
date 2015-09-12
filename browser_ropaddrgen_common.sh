@@ -1,6 +1,8 @@
 titledir=$1
 crodir=$2
 curlprefix=$3
+procname=$4
+serveradr=$5
 
 function getimport
 {
@@ -14,8 +16,28 @@ function getexport
 	echo "${3}0x${offset};"
 }
 
-ropgadget_patternfinder $titledir/*exefs/code.bin --script=browser_ropgadget_script --baseaddr=0x100000 --patterntype=sha256
-ropgadget_patternfinder $crodir/webkit.cro --patterntype=sha256 --patterndata=17f19cd8b8896468edbad52b1a47862f432c6f7b119e7f5b2f4458d3a9009795 --patternsha256size=0x8 "--plainout=\$ROP_STR_R0TOR1 = \$WEBKITCRO_MAPADR+"
+if [ $# -ge 5 ]; then
+	textmaxsize=$(grep -h "Code text max pages" $1/00*.info | cut "-d(" -f2 | cut "-d)" -f1)
+	romaxsize=$(grep -h "Code ro max pages" $1/00*.info | cut "-d(" -f2 | cut "-d)" -f1)
+	datamaxsize=$(grep -h "Code data max pages" $1/00*.info | cut "-d(" -f2 | cut "-d)" -f1)
+	bsssize=$(grep -h "Code bss size" $1/00*.info | cut "-d:" -f2 | tr -d " ")
+	echo "\$CODEBLK_ENDADR = ((0x00100000 + $textmaxsize + $romaxsize + $datamaxsize + ${bsssize}) + 0xfff) & ~0xfff;"
+
+	physaddr=$(ctrclient-yls8 --serveradr=$serveradr "--customcmd=getprocinfo:addrconv $procname 0x08000000" | grep Output | cut "-d " -f2)
+	memdump_path=${procname}_x08000000.bin
+	ctrclient-yls8 --serveradr=$serveradr "--customcmd=readmem:11usr=$procname 0x08000000 0x800000 @$memdump_path" > ${procname}_x08000000_toolstdout
+	ropgadget_patternfinder $memdump_path --patterntype=datacmp --patterndata=$(xxd -l 32 -p $crodir/oss.cro) --patternsha256size=0x20 --baseaddr=0x08000000 "--plainout=\$OSSCRO_HEAPADR = " "--plainsuffix=;"
+	ropgadget_patternfinder $memdump_path --patterntype=datacmp --patterndata=$(xxd -l 32 -p $crodir/webkit.cro) --patternsha256size=0x20 --baseaddr=0x08000000 "--plainout=\$WEBKITCRO_HEAPADR = " "--plainsuffix=;"
+	if [[ -f $crodir/peer.cro ]]; then
+		ropgadget_patternfinder $memdump_path --patterntype=datacmp --patterndata=$(xxd -l 32 -p $crodir/peer.cro) --patternsha256size=0x20 --baseaddr=0x08000000 "--plainout=\$PEERCRO_HEAPADR = " "--plainsuffix=;"
+	fi
+	echo "\$APPHEAP_PHYSADDR = $physaddr;"
+
+	echo -e "init_mapaddrs_cro();\n"
+fi
+
+ropgadget_patternfinder $titledir/*exefs/code.bin --script=browser_ropgadget_script --baseaddr=0x100000 --patterntype=sha256 "--plainsuffix=;"
+ropgadget_patternfinder $crodir/webkit.cro --patterntype=sha256 --patterndata=17f19cd8b8896468edbad52b1a47862f432c6f7b119e7f5b2f4458d3a9009795 --patternsha256size=0x8 "--plainout=\$ROP_STR_R0TOR1 = \$WEBKITCRO_MAPADR+" "--plainsuffix=;"
 echo -n -e "\n"
 getimport oss.cro wkc_fopen "\$WKC_FOPEN = \$OSSCRO_MAPADR+"
 getimport oss.cro wkc_fclose "\$WKC_FCLOSE = \$OSSCRO_MAPADR+"
