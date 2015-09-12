@@ -11,6 +11,8 @@
 #$ROP_LDR_R0_FROMR0_SHIFTR1 #$OSSCRO_MAPADR
 --patterndata=b07e2e2704ce8c323d159ab2283960209789fd5aa19952e762d59f4c2a38dad3 --patternsha256size=0x8 "--plainout=$ROP_ADDR0_TO_R1 = "
 
+--patterndata=ec41c58fcd53d6064a14886baed5a60506e20a59d322b1da729d03594822390e --patternsha256size=0x24 "--plainout=$ROP_WRITETHREADSTORAGEPTR_TOR4R5 = "
+
 --patterndata=3dd9c6c8a88e2ee07f9d0debcb5ef3b5ff142f0b3c6548616418bb749bb4d860 --patternsha256size=0x1c "--plainout=$MEMCPY = "
 
 --patterndata=883dc75d232f768ecafc1d6fd569c3b8301b1eda5ef5d52392872eed9be7f015 --patterndatamask=ffffffff00ffffffffffffffffffffff --patternsha256size=0x18 "--plainout=$srv_GetServiceHandle = "
