@@ -2,3 +2,4 @@
 --patterndata=679d1a336c42b2c54d7995780b31f3a8dea5553a60b4009fb8181b23c728fe72 --patterndatamask=ffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000ffffffffffffffffffffffffffffffffffffffffff --patternsha256size=0x70 "--plainout=$GSP_WRITEHWREGS = "
 
 --patterndata=27eedd77d692db6efd199e64d9bcd35a5ac285bb112c9bdce5bfc1fc98fc1239 --patternsha256size=0x18 "--plainout=$IFile_Close = "
+--patterndata=3250725b7c148ee1c4ce025b06ebd6f0f6a9aa230eaf94eeb1ee382d86ad4fef --patternsha256size=0x54 "--plainout=$IFile_Write = "
