@@ -6,6 +6,10 @@
 
 --patterndata=cea0db90c00cd119d24d0ac603d7cf6469e981fc1f3071b38cbe3b9d409fc3cf --patternsha256size=0x50 "--plainout=$OPENFILEDIRECTLY_WRAP = "
 
+--patterndata=f3e5d9688528c7d3fc7aa5df10758995a8c1c93e03576514501663672083e3e0 --patternsha256size=0x4 "--plainout=$ROP_POP_R0IPPC = "
+
+--patterndata=e6e33146879a0d0da9c6f0545a467d4ccb80c1a75fc3a28eca14746764ff53c0 --patternsha256size=0x8 "--plainout=$ROP_LDR_R0_FROMR0_SHIFTR1 = "
+
 --patterndata=af2340c79e21eafca7fc19ab659f8a9bfbd9e092578407115553e7cf7e7c06ac --patternsha256size=0x10 "--plainout=$ROP_LDMSTM_R5R4_R0R3 = "
 
 --patterndata=0df225cf984b987f813a2b84de79e8e38c2934e381f7f79092273ad17bb9b79e --patternsha256size=0x8 "--plainout=$ROP_STMR0_R0PC = "
