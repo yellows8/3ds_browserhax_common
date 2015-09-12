@@ -3,3 +3,5 @@
 
 --patterndata=d2dfec7874a22d753a2715e6ad640e0572d6b3d86d12792762d259ff0216705e --patternsha256size=0x18 "--plainout=$IFile_Close = "
 --patterndata=da7ca72845368ccfc7f4634e07d559bf055622473730f9503f819fa1aa8482f7 --patternsha256size=0x54 "--plainout=$IFile_Write = "
+
+--patterndata=a0faa5014577a4fa0f04be206e86fceddf3d42beab70bdd79b541918fe4a5676 --patternsha256size=0x10 "--plainout=$ROP_LDMSTM_R5R4_R0R3 = "
