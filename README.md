@@ -8,12 +8,13 @@ Old3DS system Internet Browser(spider) (see also http://3dbrew.org/wiki/Internet
 * 1.7552 v3075/5.0.0-11 / v3088/7.0.0-13 (v3088 main ncch is the same as v3075, only the manual CFA was updated)
 * 1.7567 v4096/7.1.0-16
 * 1.7585 v5121/9.5.0-23
-* TODO: Implement support for system-version >=v9.9 with spider.
+* 1.7610 v6149/9.9.0-26
 
 New3DS system Internet Browser(SKATER) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions):
 * 1.0.9934 v10 9.0.0-20
 * 1.1.9996 v1027 9.3.0-21
-* TODO: Implement support for system-version >=v9.6/v9.9 with SKATER.
+* 1.2.10085 v2051 9.6.0-24
+* 1.3.10126 v3077 9.9.0-26
 
 # Usage with seperate exploits
 With php, this repo can be used with the following:

@@ -20,7 +20,7 @@ if($getbinselect==3)
 		echo $con;
 	}
 
-	return;
+	exit;
 }
 
 $ua = $_SERVER['HTTP_USER_AGENT'];
@@ -37,7 +37,7 @@ if(!isset($generatebinrop))$generatebinrop = 0;
 $browserver = -1;
 
 //old3ds: browserver titlever sysver
-if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2
+if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2 (not actually supported)
 {
 	$browserver = 0;
 } else if(strstr($ua, "1.7455"))//1.7455 v1024/2.1.0-4
@@ -55,6 +55,9 @@ if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2
 } else if(strstr($ua, "1.7585"))//1.7585 v5121/9.5.0-23
 {
 	$browserver = 5;
+} else if(strstr($ua, "1.7610"))//1.7610 v6149/9.9.0-26
+{
+	$browserver = 6;
 }
 
 //new3ds: Mobile-NintendoBrowser-version titlever sysver
@@ -66,7 +69,11 @@ else if(strstr($ua, "1.1.9996"))//1.1.9996 v1027 9.3.0-21
 {
 	$browserver = 0x81;
 }
-else if(strstr($ua, "1.3.10126"))//1.3.10126 v3077 9.9.0-26 (this version isn't fully supported)
+else if(strstr($ua, "1.2.10085"))//1.2.10085 v2051 9.6.0-24
+{
+	$browserver = 0x82;
+}
+else if(strstr($ua, "1.3.10126"))//1.3.10126 v3077 9.9.0-26
 {
 	$browserver = 0x83;
 }
@@ -78,7 +85,7 @@ if($browserver == -1)
 	return;
 }
 
-if($browserver != 1 && $browserver != 2 && $browserver != 3 && $browserver != 4  && $browserver != 5 && $browserver != 0x80 && $browserver != 0x81 && $browserver != 0x83)
+if(!($browserver>=1 && $browserver<=6) && !(($browserver & 0x80) && ($browserver>=0x80 && $browserver<=0x83)))
 {
 	echo "This browser version is not supported.\n";
 	writeNormalLog("RESULT: 200 BROWSERVER NOT SUPPORTED");
@@ -503,6 +510,87 @@ else if($browserver == 5)
 	//$APT_PrepareToDoApplicationJump = 0x00299fb8;//needs updated
 	//$APT_DoApplicationJump = 0x0029953c;//needs updated
 }
+else if($browserver == 6)
+{
+	$CODEBLK_ENDADR = ((0x00100000 + 0x00270000 + 0x00064000 + 0x00018000 + 0x00056830) + 0xfff) & ~0xfff;
+	$OSSCRO_HEAPADR = 0x083a5000;
+	$WEBKITCRO_HEAPADR = 0x0858a000;
+	$APPHEAP_PHYSADDR = 0x25000000;
+	init_mapaddrs_cro();
+
+	$STACKPIVOT_ADR = 0x00131080;
+	$COND_THROWFATALERR = 0x001a0420;
+
+	$ROP_POP_R0R6PC = 0x00105128;
+	$ROP_POP_R0R8PC = 0x00131cec;
+	$ROP_POP_R0PC = 0x0010c460;
+	$ROP_POP_R1R5PC = 0x00101e8c;
+
+	$ROP_STR_R1TOR0 = 0x001040bc;
+	$ROP_LDR_R0FROMR0 = 0x001117cc;
+	$ROP_ADDR0_TO_R1 = 0x0012c2f8;
+
+	$ROP_WRITETHREADSTORAGEPTR_TOR4R5 = 0x00169c1c;
+
+	$srv_GetServiceHandle = 0x0023c9ec;
+
+	$svcGetProcessId = 0x00100ca4;
+	$svcSendSyncRequest = 0x0024488c;
+	$svcControlMemory = 0x001447f4;
+	$svcSleepThread = 0x001041f4;
+
+	$GXLOW_CMD4 = 0x0011de60;
+	$GSPGPU_SERVHANDLEADR = 0x003dd72c;
+
+	$FS_MOUNTSDMC = 0x0019dcdc;
+
+	$IFile_Open = 0x00230124;
+	$IFile_GetSize = 0x002076b0;
+	$IFile_Seek = 0x00152844;
+	$IFile_Read = 0x00169ab0;
+
+	$FS_DELETEFILE = 0x00169794;
+
+	$FSFILEIPC_CLOSE = 0x0028095c;
+	$FSFILEIPC_READ = 0x00280904;
+	$FSFILEIPC_GETSIZE = 0x002809e8;
+
+	$POPPC = 0x001057c0;
+
+	$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x0002ff20;
+
+	$WKC_FOPEN = $OSSCRO_MAPADR+0x5d8-0x4;
+	$WKC_FCLOSE = $OSSCRO_MAPADR+0x5d0-0x4;
+	$WKC_FREAD = $OSSCRO_MAPADR+0x5e0-0x4;
+	$WKC_FWRITE = $OSSCRO_MAPADR+0x5e8-0x4;
+	$WKC_FSEEK = $OSSCRO_MAPADR+0x5f8-0x4;
+
+	$ROP_curl_easy_cleanup = $WEBKITCRO_MAPADR+0xe9c-0x4;
+	$ROP_curl_easy_init = $WEBKITCRO_MAPADR+0xea4-0x4;
+	$ROP_curl_easy_perform = $WEBKITCRO_MAPADR+0xecc-0x4;
+	$ROP_curl_easy_setopt = $WEBKITCRO_MAPADR+0xa2c-0x4;
+
+	$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x194-0x4;
+	$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x30c-0x4;
+
+	$GSP_FLUSHDCACHE = 0x00192798;
+	$GSP_WRITEHWREGS = 0x0011e268;
+
+	$IFile_Close = 0x001fdccc;
+	$IFile_Write = 0x00169b38;
+
+	$OPENFILEDIRECTLY_WRAP = 0x0027d2fc;
+
+	$THROW_FATALERR = 0x00152dec;
+
+	$ROP_POP_R0IPPC = 0x0018de08;
+
+	$ROP_LDR_R0_FROMR0_SHIFTR1 = 0x00101214;
+
+	$ROP_LDMSTM_R5R4_R0R3 = 0x001d39fc;
+
+	$ROP_STMR0_R0PC = 0x001bc8c0;
+}
 else if($browserver == 0x80)//new3ds
 {
 	$CODEBLK_ENDADR = 0x00422000;
@@ -633,9 +721,165 @@ else if($browserver == 0x81)
 	//$APT_PrepareToDoApplicationJump = 0x00299fb8;//needs updated
 	//$APT_DoApplicationJump = 0x0029953c;//needs updated
 }
+else if($browserver == 0x82)
+{
+	$CODEBLK_ENDADR = ((0x00100000 + 0x00276000 + 0x00065000 + 0x0000A000 + 0x00045928) + 0xfff) & ~0xfff;
+	$OSSCRO_HEAPADR = 0x0810e000;
+	$WEBKITCRO_HEAPADR = 0x083d6000;
+	$PEERCRO_HEAPADR = 0x082f1000;
+	$APPHEAP_PHYSADDR = 0x2b000000;
+	init_mapaddrs_cro();
+
+	$STACKPIVOT_ADR = 0x0027a5a8;
+	$COND_THROWFATALERR = 0x00261bdc;
+
+	$ROP_POP_R0R6PC = 0x001df39c;
+	$ROP_POP_R0R8PC = 0x0030b454;
+	$ROP_POP_R0PC = 0x002962d4;
+	$ROP_POP_R1R5PC = 0x001dc97c;
+
+	$ROP_STR_R1TOR0 = 0x00226494;
+	$ROP_LDR_R0FROMR0 = 0x001f74c0;
+	$ROP_ADDR0_TO_R1 = 0x0027ae58;
+
+	$ROP_WRITETHREADSTORAGEPTR_TOR4R5 = 0x00296978;
+
+	$srv_GetServiceHandle = 0x001ea6a8;
+
+	$svcGetProcessId = 0x0026b09c;
+	$svcSendSyncRequest = 0x001eace4;
+	$svcControlMemory = 0x0026294c;
+	$svcSleepThread = 0x002d80a0;
+
+	$GXLOW_CMD4 = 0x002a1908;
+	$GSPGPU_SERVHANDLEADR = 0x003e33d0;
+
+	$FS_MOUNTSDMC = 0x00317e5c;
+
+	$IFile_Open = 0x003213e4;
+	$IFile_GetSize = 0x001f1b88;
+	$IFile_Seek = 0x0032ca78;
+	$IFile_Read = 0x0030b578;
+
+	$FS_DELETEFILE = 0x00324bfc;
+
+	$FSFILEIPC_CLOSE = 0x002671f8;
+	$FSFILEIPC_READ = 0x002671a0;
+	$FSFILEIPC_GETSIZE = 0x00333a5c;
+
+	$POPPC = 0x001df1b8;
+
+	$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x004222a0;
+
+	$WKC_FOPEN = $OSSCRO_MAPADR+0xdb4c4-0x4;
+	$WKC_FCLOSE = $OSSCRO_MAPADR+0xdb4b4-0x4;
+	$WKC_FREAD = $OSSCRO_MAPADR+0xdb4bc-0x4;
+	$WKC_FWRITE = $OSSCRO_MAPADR+0xdb4cc-0x4;
+	$WKC_FSEEK = $PEERCRO_MAPADR+0x1f77d;
+
+	$ROP_curl_easy_cleanup = $WEBKITCRO_MAPADR+0x4db9a8-0x4;
+	$ROP_curl_easy_init = $WEBKITCRO_MAPADR+0x4db510-0x4;
+	$ROP_curl_easy_perform = $WEBKITCRO_MAPADR+0x4dba70-0x4;
+	$ROP_curl_easy_setopt = $WEBKITCRO_MAPADR+0x4db518-0x4;
+
+	$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x4dadb8-0x4;
+	$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x4dad98-0x4;
+
+	$GSP_FLUSHDCACHE = 0x0029cf4c;
+	$GSP_WRITEHWREGS = 0x00297774;
+
+	$IFile_Close = 0x001ec32c;
+	$IFile_Write = 0x00326340;
+
+	$THROW_FATALERR = 0x001f1b58;
+
+	$ROP_LDMSTM_R5R4_R0R3 = 0x001e86d4;
+
+	$ROP_POP_R0IPPC = $WEBKITCRO_MAPADR+0x001b2e94;
+
+	$ROP_LDR_R0_FROMR0_SHIFTR1 = $OSSCRO_MAPADR+0x000ff87c;
+
+	$ROP_STMR0_R0PC = $PEERCRO_MAPADR+0x0001ee91;
+}
 else if($browserver == 0x83)
 {
+	$CODEBLK_ENDADR = ((0x00100000 + 0x00277000 + 0x00065000 + 0x0000A000 + 0x00045928) + 0xfff) & ~0xfff;
+	$OSSCRO_HEAPADR = 0x08133000;
+	$WEBKITCRO_HEAPADR = 0x083ff000;
+	$PEERCRO_HEAPADR = 0x0831a000;
+	$APPHEAP_PHYSADDR = 0x2b000000;
+	init_mapaddrs_cro();
+
 	$STACKPIVOT_ADR = 0x0027b058;
+	$COND_THROWFATALERR = 0x0026268c;
+
+	$ROP_POP_R0R6PC = 0x001df788;
+	$ROP_POP_R0R8PC = 0x0030c248;
+	$ROP_POP_R0PC = 0x00296d84;
+	$ROP_POP_R1R5PC = 0x001dcd68;
+
+	$ROP_STR_R1TOR0 = 0x00226b9c;
+	$ROP_LDR_R0FROMR0 = 0x001f799c;
+	$ROP_ADDR0_TO_R1 = 0x0027b908;
+
+	$ROP_WRITETHREADSTORAGEPTR_TOR4R5 = 0x00297428;
+
+	$srv_GetServiceHandle = 0x001eaa94;
+
+	$svcGetProcessId = 0x0026bb4c;
+	$svcSendSyncRequest = 0x001eb0d0;
+	$svcControlMemory = 0x002633fc;
+	$svcSleepThread = 0x002d8bf4;
+
+	$GXLOW_CMD4 = 0x002a23b8;
+	$GSPGPU_SERVHANDLEADR = 0x003e43d0;
+
+	$FS_MOUNTSDMC = 0x00318c50;
+
+	$IFile_Open = 0x00322204;
+	$IFile_GetSize = 0x001f1f74;
+	$IFile_Seek = 0x0032d86c;
+	$IFile_Read = 0x0030c36c;
+
+	$FS_DELETEFILE = 0x00325a34;
+
+	$FSFILEIPC_CLOSE = 0x00267ca8;
+	$FSFILEIPC_READ = 0x00267c50;
+	$FSFILEIPC_GETSIZE = 0x00334858;
+
+	$POPPC = 0x001df5a4;
+
+	$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x004223dc;
+
+	$WKC_FOPEN = $OSSCRO_MAPADR+0xde3a8-0x4;
+	$WKC_FCLOSE = $OSSCRO_MAPADR+0xde398-0x4;
+	$WKC_FREAD = $OSSCRO_MAPADR+0xde3a0-0x4;
+	$WKC_FWRITE = $OSSCRO_MAPADR+0xde3b0-0x4;
+	$WKC_FSEEK = $PEERCRO_MAPADR+0x1f83d;
+
+	$ROP_curl_easy_cleanup = $WEBKITCRO_MAPADR+0x4dbaf0-0x4;
+	$ROP_curl_easy_init = $WEBKITCRO_MAPADR+0x4db658-0x4;
+	$ROP_curl_easy_perform = $WEBKITCRO_MAPADR+0x4dbbb8-0x4;
+	$ROP_curl_easy_setopt = $WEBKITCRO_MAPADR+0x4db660-0x4;
+
+	$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x4daf00-0x4;
+	$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x4daee0-0x4;
+
+	$GSP_FLUSHDCACHE = 0x0029d9fc;
+	$GSP_WRITEHWREGS = 0x00298224;
+
+	$IFile_Close = 0x001ec718;
+	$IFile_Write = 0x00327178;
+
+	$THROW_FATALERR = 0x001f1f44;
+
+	$ROP_LDMSTM_R5R4_R0R3 = 0x001e8ac0;
+
+	$ROP_POP_R0IPPC = $WEBKITCRO_MAPADR+0x001b2e74;
+
+	$ROP_LDR_R0_FROMR0_SHIFTR1 = $OSSCRO_MAPADR+0x001027ac;
+
+	$ROP_STMR0_R0PC = $PEERCRO_MAPADR+0x0001ef51;
 }
 
 if($browserver == 3 || $browserver == 4)$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2f9f0;
@@ -712,8 +956,8 @@ else if($browserver == 0x81)//new3ds
 
 if($browserver < 0x80)
 {
-	$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x190;
-	$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x308;
+	if($browserver < 6)$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x190;
+	if($browserver < 6)$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x308;
 }
 else if($browserver >= 0x80)
 {
@@ -1690,6 +1934,11 @@ function generateropchain_type2()
 	}
 
 	ropgen_callfunc($LINEAR_CODETMPBUF, 0x10000, 0x0, 0x0, $POPPC, $GSP_FLUSHDCACHE);//Flush the data-cache for the loaded code.
+
+	if(!isset($SRVPORT_HANDLEADR))$SRVPORT_HANDLEADR = 0x0;
+	if(!isset($SRV_REFCNT))$SRV_REFCNT = 0x0;
+	if(!isset($srvpm_initialize))$srvpm_initialize = 0x0;
+	if(!isset($srv_shutdown))$srv_shutdown = 0x0;
 
 	$databuf = array();
 	$databuf[0] = 0x0;

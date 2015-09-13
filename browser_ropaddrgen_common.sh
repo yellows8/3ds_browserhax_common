@@ -13,7 +13,7 @@ function getimport
 function getexport
 {
 	offset=$(ctrtool-plutoo --intype=cro $crodir/$1 | grep -w -A 1 $2 | tail -n 1 | cut "-d " -f3)
-	echo "${3}0x${offset};"
+	echo "${3}${offset};"
 }
 
 if [ $# -ge 5 ]; then
