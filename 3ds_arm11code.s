@@ -107,6 +107,12 @@ add r0, sp, #12
 ldr r1, =0x101
 bl APT_PreloadLibraryApplet @ Launch Home Menu as a "LibraryApplet".
 
+add r0, sp, #12
+ldr r1, =0x101
+bl APT_FinishPreloadingLibraryApplet
+ldr r3, =0xf0f0f0f0
+blx checkerror_triggercrash
+
 ldr r0, [sp, #12]
 blx svcCloseHandle
 
@@ -192,12 +198,35 @@ str r1, [r4, #4]
 
 ldr r0, [r0]
 blx svcSendSyncRequest
-svc 0x32
 cmp r0, #0
 bne APT_PreloadLibraryApplet_end
 ldr r0, [r4, #4]
 
 APT_PreloadLibraryApplet_end:
+add sp, sp, #16
+pop {r4, r5, pc}
+.pool
+
+.type APT_FinishPreloadingLibraryApplet, %function
+APT_FinishPreloadingLibraryApplet: @ inr0=handle*, inr1=NS_APPID appID
+push {r0, r1, r2, r3, r4, r5, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r0, [sp, #0]
+
+ldr r5, =0x00170040
+str r5, [r4, #0]
+ldr r1, [sp, #4]
+str r1, [r4, #4]
+
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne APT_FinishPreloadingLibraryApplet_end
+ldr r0, [r4, #4]
+
+APT_FinishPreloadingLibraryApplet_end:
 add sp, sp, #16
 pop {r4, r5, pc}
 .pool
@@ -515,6 +544,13 @@ str r0, [sp, #0]
 str r0, [sp, #4]
 ldr r4, =0x139450 @ APT_ReceiveParameter inr0=u32* out appid inr1=u32* out signaltype inr2=buf inr3=bufsize insp0=u32* out actual parambuf size insp4=outhandle* (nullptrs are allowed)
 blx r4
+
+/*ldr r3, =0x104f54//Supposed to be apt-init but no APT service cmds get used when this is called.
+blx r3
+
+ldr r0, =3000000000
+mov r1, #0
+svc 0x0a @ Wait for APT thread to process stuff.*/
 
 ldr sp, =0x35040000 @ Start running the menuropbin.
 pop {pc}
