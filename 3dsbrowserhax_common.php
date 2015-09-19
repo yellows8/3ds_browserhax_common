@@ -1841,6 +1841,8 @@ function generateropchain_type2()
 	$LINEARADR_CODESTART = $LINEARADR_OSSCRO + 0x6e0;
 	$CODESTART_MAPADR = $OSSCRO_MAPADR + 0x6e0;
 
+	$codebinsize = 0xa000;//0x10000;
+
 	$IFile_ctx = $ROPHEAP;
 
 	ropgen_writeu32($ROPHEAP, 0x0100FFFF, 0, 1);
@@ -1911,7 +1913,7 @@ function generateropchain_type2()
 		//ropchain_appendu32(0x50505050);
 		ropgen_condfatalerr();
 
-		ropgen_callfunc($IFile_ctx, $ROPHEAP+0x20, $LINEAR_CODETMPBUF, 0x10000, $POPPC, $IFile_Read);//Read the file to $LINEAR_CODETMPBUF with size 0x10000, actual size must be <=0x10000.
+		ropgen_callfunc($IFile_ctx, $ROPHEAP+0x20, $LINEAR_CODETMPBUF, $codebinsize, $POPPC, $IFile_Read);//Read the file to $LINEAR_CODETMPBUF with size $codebinsize, actual size must be <=$codebinsize.
 		//ropchain_appendu32(0x40404040);
 		ropgen_condfatalerr();
 
@@ -1930,10 +1932,10 @@ function generateropchain_type2()
 	}
 	else if($arm11code_loadfromsd==2)
 	{
-		ropgen_httpdownload_binary($LINEAR_CODETMPBUF, 0x10000, browserhaxcfg_getbinparam_type3());
+		ropgen_httpdownload_binary($LINEAR_CODETMPBUF, $codebinsize, browserhaxcfg_getbinparam_type3());
 	}
 
-	ropgen_callfunc($LINEAR_CODETMPBUF, 0x10000, 0x0, 0x0, $POPPC, $GSP_FLUSHDCACHE);//Flush the data-cache for the loaded code.
+	ropgen_callfunc($LINEAR_CODETMPBUF, $codebinsize, 0x0, 0x0, $POPPC, $GSP_FLUSHDCACHE);//Flush the data-cache for the loaded code.
 
 	if(!isset($SRVPORT_HANDLEADR))$SRVPORT_HANDLEADR = 0x0;
 	if(!isset($SRV_REFCNT))$SRV_REFCNT = 0x0;
@@ -1976,7 +1978,7 @@ function generateropchain_type2()
 	ropchain_appendu32($ROP_POP_R0R6PC);
 	ropchain_appendu32($LINEAR_CODETMPBUF);//r0 srcaddr
 	ropchain_appendu32($LINEARADR_CODESTART);//r1 dstaddr
-	ropchain_appendu32(0x10000);//r2 size
+	ropchain_appendu32($codebinsize);//r2 size
 	ropchain_appendu32(0x0);//r3 width0
 	ropchain_appendu32(0x0);//r4
 	ropchain_appendu32(0x0);//r5
@@ -2010,7 +2012,7 @@ function generateropchain_type2()
 	ropgen_callfunc(0x1ED02A04-0x1EB00000, $ROPHEAP, 0x4, 0x0, $ROP_POP_R0R6PC, $GSP_WRITEHWREGS);//Set the sub-screen colorfill reg so that white is displayed.
 
 	ropchain_appendu32($LINEAR_TMPBUF);//r0
-	ropchain_appendu32(0x0);//r1
+	ropchain_appendu32(0x10000000-0x1f000);//r1 (relocated stack-top if needed by the payload, this addr is intended for SKATER)
 	ropchain_appendu32(0x0);//r2
 	ropchain_appendu32(0x0);//r3
 	ropchain_appendu32(0x0);//r4
