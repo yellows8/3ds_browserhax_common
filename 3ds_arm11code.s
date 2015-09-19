@@ -2,7 +2,7 @@
 .global _start
 .arm
 
-//This is a loader for hblauncher, currently only for spiderhax(Old3DS system web-browser). Right now this is hard-coded for system-version v10.1.
+//This is a loader for hblauncher, currently only for spiderhax(Old3DS system web-browser). Right now this is hard-coded for system-version v10.1 USA.
 //This doesn't work correctly atm: APT_SendParameter when used in hblauncher is failing.
 //Also note that APT would be broken even worse than with other hax which boot hblauncher, with the spider version of this.
 
