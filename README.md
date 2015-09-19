@@ -3,18 +3,21 @@ This repo is for intended for any 3DS title which has some form of web browser. 
 # Supported titles and versions
 The versions below are listed in the following format: browserver titlever sysver. Which browserver(target title + version of the title) to use is automatically determined by checking the user-agent. Due to this, when accessing hax with this, the New3DS system web-browser must be set to use the normal user-agent, not the mobile user-agent(the mobile user-agent is the same for all versions).
 
+Also note that with the system web-browser, only the last number in the system-version(X.X.X-NUPVER) actually matters for the browser version. Loading arm11code for pre-v5.0 Old3DS browser versions is only supported with pre-v5.0 NATIVE_FIRM. For example, arm11code loading wouldn't work if the system-version is X.Y.Z-NUPVER, where NUPVER is less than 11 and "X.Y.Z" is at least "5.0.0".
+
 Old3DS system Internet Browser(spider) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions_2):
-* 1.7498 v2050/4.0.0-7
-* 1.7552 v3075/5.0.0-11 / v3088/7.0.0-13 (v3088 main ncch is the same as v3075, only the manual CFA was updated)
-* 1.7567 v4096/7.1.0-16
-* 1.7585 v5121/9.5.0-23
-* 1.7610 v6149/9.9.0-26
+* 1.7455 v1024/2.1.0-4..3.0.0-6
+* 1.7498 v2050/4.0.0-7..4.5.0-10
+* 1.7552 v3075/5.0.0-11 / v3088/7.0.0-13 (v3088 main ncch is the same as v3075, only the manual CFA was updated) (that is, 5.0.0-11..7.0.0-13)
+* 1.7567 v4096/7.1.0-16..9.5.0-22
+* 1.7585 v5121/9.5.0-23..9.8.0-25
+* 1.7610 v6149/9.9.0-26..10.1.0-27
 
 New3DS system Internet Browser(SKATER) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions):
-* 1.0.9934 v10 9.0.0-20
-* 1.1.9996 v1027 9.3.0-21
-* 1.2.10085 v2051 9.6.0-24
-* 1.3.10126 v3077 9.9.0-26
+* 1.0.9934 v10 9.0.0-20..9.2.0-20
+* 1.1.9996 v1027 9.3.0-21..9.5.0-23
+* 1.2.10085 v2051 9.6.0-24..9.8.0-25
+* 1.3.10126 v3077 9.9.0-26..10.1.0-27
 
 # Usage with seperate exploits
 With php, this repo can be used with the following:
@@ -43,3 +46,5 @@ Values for $arm11code_loadfromsd:
 * 1: The arm11code payload is loaded from SD via this filepath: "sdmc:/arm11code.bin".
 * 2: The arm11code payload is downloaded by requesting a binary with http, see the above example config and ropgen_httpdownload_binary() in 3dsbrowserhax_common.php. The binary is downloaded to SD, once it's finished with that the file has all-zeros written to it, then it attempts to delete the file(which doesn't actually delete the file, unknown why).
 
+# Homebrew Launcher
+This codebase is mainly intended for loading an arbitrary arm11code payload, at a vaddr which varies per title/version. Homebrew-launcher would most likely be booted via this arm11code payload, but it's currently unknown how an arm11code payload would boot hb-launcher under the context of the system web-browsers(this is being worked on, this is more difficult with spider).
