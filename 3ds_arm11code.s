@@ -7,7 +7,7 @@
 
 _start:
 mov r7, r0
-ldr sp, =(0x10000000-0x1000)
+ldr sp, =(0x10000000-0x7000)
 
 add r1, pc, #1
 bx r1
@@ -94,13 +94,9 @@ mov r3, #0
 ldr r4, [r7, #0x18]
 blx r4 @ srv_GetServiceHandle
 
-ldr r0, =0x09a00000-0xd00000
+ldr r0, =0x09a00000-0xd00000 @ Free some of the spider regular-heap so that there's enough memory available to launch Home Menu.
 ldr r1, =(0xd00000)
 bl freemem
-
-/*ldr r0, =0x18000000+0x352000//0x18b52000-0xa00000
-ldr r1, =0x18b52000-0x18352000//(0xa00000)
-bl freemem*/
 
 add r0, sp, #12
 ldr r1, =0x101
@@ -117,37 +113,16 @@ blx checkerror_triggercrash
 ldr r0, [sp, #12]
 blx svcCloseHandle
 
-//ldr r0, =0x18600000
-//ldr r0, =0x1f000000
 ldr r0, =0x1000
 add r0, r0, r7
-ldr r1, =(0x6500000+0x14000000+0x1a40)//(0x14000000+0x4b00000-0x50000)
-ldr r2, =0x100//0x2000//0x200000//+0x50000
+ldr r1, =(0x6500000+0x14000000+0x1a40) @ .text+0x1a40
+ldr r2, =0x100
 bl gxcmd4 @ Overwrite homemenu main(), starting with the code following the nss_initialize() call.
 
 mov r0, #0 @ gsp init/shutdown, r0=0 is for shutdown.
 ldr r3, =0x1d13e0
 blx r3
 
-/*ldr r0, =0x08040000
-ldr r1, =0x10000
-bl freemem
-
-ldr r3, =0x10000 @ size
-mov r1, #0 @ addr
-ldr r0, =0x10003 @ operation
-mov r4, #3 @ permissions
-mov r2, #0 @ addr1
-svc 0x01
-ldr r3, =0x40404040//(0x10000000-4)
-str r1, [r3]*/
-
-/*ldr r0, =0x18600000
-//ldr r0, =0x1f000000
-ldr r1, =(0x14000000+0x4b00000-0x50000)
-ldr r2, =0x100000+0x50000
-//bl gxcmd4
-*/
 svc 0x03 @ Terminate the browser process.
 b .
 .pool
@@ -486,10 +461,6 @@ ldr r0, =3000000000
 mov r1, #0
 blx menustub_svcSleepThread
 
-/*ldr r0, =1000000000
-mov r1, #0
-blx menustub_svcSleepThread*/
-
 @ Allocate linearmem with the same total size as Home Menu when it's fully loaded.
 menustub_memalloc:
 ldr r3, =(0x25652000-0x24352000) @ size
@@ -500,9 +471,6 @@ mov r2, #0 @ addr1
 blx menustub_svcControlMemory
 cmp r0, #0
 bne menustub_memalloc @ Sometimes spider doesn't always terminate by the time the above sleep code finishes, so keep trying to alloc memory until it's successful.
-/*ldr r3, =0x90909090
-cmp r0, #0
-strne r0, [r3] @ Trigger crash on memalloc fail.*/
 
 ldr r3, =0x138e8c//gsp_initialize_wrap
 blx r3
@@ -538,40 +506,23 @@ strb r1, [r0]
 ldr r1, =0x321daf @ Force the homemenu APT_GetServHandle code to try opening APT:S first.
 str r1, [r0, #8]
 
-/*ldr r0, =0x101
-mov r1, #0
-ldr r2, =0x5109d503
-ldr r3, =0x107ba8
-//ldr r3, =0x104f54//Supposed to be apt-init but no APT service cmds get used when this is called.
-blx r3*/
-//.word 0xffffffff
-/*ldr r0, =3000000000
-mov r1, #0
-svc 0x0a @ Wait for APT thread to process stuff.*/
-
 @ Do APT init for Home Menu.
 ldr r3, =0x0107fbc//APT_GetServHandle
 blx r3
 
 ldr r1, =(0x0032de90+20) @ Init the appid used by the below code.
-//ldr r1, =0x00340278
 ldr r0, =0x101
 str r0, [r1]
 
-//ldr r0, =0x101
 ldr r1, =0x20000002
 mov r2, sp
 mov r3, sp
 ldr r4, =0x107e64//aptipc_Initialize
 blx r4
-/*ldr r3, =0xe0e0e0e0
-blx menustub_checkerror_triggercrash*/
 
 ldr r0, =0x20000002
 ldr r3, =0x11100c//aptipc_finalize
 blx r3
-/*ldr r3, =0xf0f0f0f0
-blx menustub_checkerror_triggercrash*/
 
 ldr r3, =0x107c50//APT_CloseServHandle
 blx r3
@@ -599,12 +550,6 @@ bx lr
 menustub_svcControlMemory:
 svc 0x01
 bx lr
-
-/*menustub_checkerror_triggercrash:
-cmp r0, #0
-bxeq lr
-str r0, [r3]
-b .*/
 
 menustub_runropbin:
 ldr sp, =0x35040000 @ Start running the menuropbin.
