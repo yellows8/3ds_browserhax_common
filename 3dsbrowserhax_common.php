@@ -2012,7 +2012,7 @@ function generateropchain_type2()
 	ropgen_callfunc(0x1ED02A04-0x1EB00000, $ROPHEAP, 0x4, 0x0, $ROP_POP_R0R6PC, $GSP_WRITEHWREGS);//Set the sub-screen colorfill reg so that gray is displayed.
 
 	ropchain_appendu32($LINEAR_TMPBUF);//r0
-	ropchain_appendu32(0x10000000-0x1f000);//r1 (relocated stack-top if needed by the payload, this addr is intended for SKATER)
+	ropchain_appendu32(0x10000000-0x7000);//r1 (relocated stack-top if needed by the payload)
 	ropchain_appendu32(0x0);//r2
 	ropchain_appendu32(0x0);//r3
 	ropchain_appendu32(0x0);//r4
