@@ -119,9 +119,9 @@ ldr r1, =(0x6500000+0x14000000+0x1a40) @ .text+0x1a40
 ldr r2, =0x100
 bl gxcmd4 @ Overwrite homemenu main(), starting with the code following the nss_initialize() call.
 
-mov r0, #0 @ gsp init/shutdown, r0=0 is for shutdown.
-ldr r3, =0x1d13e0
-blx r3
+@ Shutdown GSP.
+bl GSPGPU_UnregisterInterruptRelayQueue
+bl GSPGPU_ReleaseRight
 
 svc 0x03 @ Terminate the browser process.
 b .
@@ -205,6 +205,44 @@ ldr r0, [r4, #4]
 APT_FinishPreloadingLibraryApplet_end:
 add sp, sp, #16
 pop {r4, r5, pc}
+.pool
+
+GSPGPU_UnregisterInterruptRelayQueue:
+push {r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, =0x00140000
+str r1, [r4, #0]
+
+ldr r0, [r7, #0x58]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne GSPGPU_UnregisterInterruptRelayQueue_end
+ldr r0, [r4, #4]
+
+GSPGPU_UnregisterInterruptRelayQueue_end:
+pop {r4, pc}
+.pool
+
+GSPGPU_ReleaseRight:
+push {r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, =0x00170000
+str r1, [r4, #0]
+
+ldr r0, [r7, #0x58]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne GSPGPU_ReleaseRight_end
+ldr r0, [r4, #4]
+
+GSPGPU_ReleaseRight_end:
+pop {r4, pc}
 .pool
 
 .type loadsd_payload, %function
