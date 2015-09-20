@@ -47,4 +47,6 @@ Values for $arm11code_loadfromsd:
 * 2: The arm11code payload is downloaded by requesting a binary with http, see the above example config and ropgen_httpdownload_binary() in 3dsbrowserhax_common.php. The binary is downloaded to SD, once it's finished with that the file has all-zeros written to it, then it attempts to delete the file(which doesn't actually delete the file, unknown why).
 
 # Homebrew Launcher
-This codebase is mainly intended for loading an arbitrary arm11code payload, at a vaddr which varies per title/version. Homebrew-launcher would most likely be booted via this arm11code payload, but it's currently unknown how an arm11code payload would boot hb-launcher under the context of the system web-browsers(this is being worked on, this is more difficult with spider).
+This codebase is mainly intended for loading an arbitrary arm11code payload, at a vaddr which varies per title/version. Homebrew-launcher can be booted via this arm11code payload, with the loader included with this repo(which is spider-only atm and hard-coded for a specific system-version/region currently).
+With the spider version of that loader, Home Menu takeover doesn't work all the time which results in a Home Menu crash, hence in some cases the spiderhax has to be run multiple times until it completely works.
+
