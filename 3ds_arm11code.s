@@ -3,7 +3,6 @@
 .arm
 
 //This is a loader for hblauncher, currently only for spiderhax(Old3DS system web-browser). Right now this is hard-coded for system-version v10.1 USA.
-//This doesn't work correctly atm: APT_SendParameter when used in hblauncher is failing.
 //Also note that APT would be broken even worse than with other hax which boot hblauncher, with the spider version of this.
 
 _start:
@@ -106,11 +105,13 @@ bl freemem*/
 add r0, sp, #12
 ldr r1, =0x101
 bl APT_PreloadLibraryApplet @ Launch Home Menu as a "LibraryApplet".
+ldr r3, =0xc0c0c0c0
+blx checkerror_triggercrash
 
 add r0, sp, #12
 ldr r1, =0x101
 bl APT_FinishPreloadingLibraryApplet
-ldr r3, =0xf0f0f0f0
+ldr r3, =0xd0d0d0d0
 blx checkerror_triggercrash
 
 ldr r0, [sp, #12]
@@ -476,14 +477,18 @@ adr r1, menustub_end
 bx lr
 
 menustub_start:
+add r1, pc, #1
+bx r1
+.thumb
+
 @ Wait for spider to terminate.
 ldr r0, =3000000000
 mov r1, #0
-svc 0x0a
+blx menustub_svcSleepThread
 
 /*ldr r0, =1000000000
 mov r1, #0
-svc 0x0a*/
+blx menustub_svcSleepThread*/
 
 @ Allocate linearmem with the same total size as Home Menu when it's fully loaded.
 menustub_memalloc:
@@ -492,7 +497,7 @@ mov r1, #0 @ addr
 ldr r0, =0x10003 @ operation
 mov r4, #3 @ permissions
 mov r2, #0 @ addr1
-svc 0x01
+blx menustub_svcControlMemory
 cmp r0, #0
 bne menustub_memalloc @ Sometimes spider doesn't always terminate by the time the above sleep code finishes, so keep trying to alloc memory until it's successful.
 /*ldr r3, =0x90909090
@@ -517,7 +522,7 @@ blx r4
 
 ldr r0, =1000000000 @ Wait for the above copy to finish.
 mov r1, #0
-svc 0x0a
+blx menustub_svcSleepThread
 
 ldr r3, =0x102850//fsuser_initialize
 blx r3
@@ -530,10 +535,46 @@ blx r3
 ldr r0, =0x0032e9bc @ Set an APT flag used by the homemenu code to determine which APT service to use: 0 = APT:A, 1 = APT:U/APT:S. In .data this is initially 0, so if this isn't changed here that homemenu code will trigger a fatalerror due to srv_GetServiceHandle failing with APT:A.
 mov r1, #1
 strb r1, [r0]
+ldr r1, =0x321daf @ Force the homemenu APT_GetServHandle code to try opening APT:S first.
+str r1, [r0, #8]
 
-ldr r0, =(0x0032de90+20) @ Init the appid used by the below code.
-ldr r1, =0x101
-str r1, [r0]
+/*ldr r0, =0x101
+mov r1, #0
+ldr r2, =0x5109d503
+ldr r3, =0x107ba8
+//ldr r3, =0x104f54//Supposed to be apt-init but no APT service cmds get used when this is called.
+blx r3*/
+//.word 0xffffffff
+/*ldr r0, =3000000000
+mov r1, #0
+svc 0x0a @ Wait for APT thread to process stuff.*/
+
+@ Do APT init for Home Menu.
+ldr r3, =0x0107fbc//APT_GetServHandle
+blx r3
+
+ldr r1, =(0x0032de90+20) @ Init the appid used by the below code.
+//ldr r1, =0x00340278
+ldr r0, =0x101
+str r0, [r1]
+
+//ldr r0, =0x101
+ldr r1, =0x20000002
+mov r2, sp
+mov r3, sp
+ldr r4, =0x107e64//aptipc_Initialize
+blx r4
+/*ldr r3, =0xe0e0e0e0
+blx menustub_checkerror_triggercrash*/
+
+ldr r0, =0x20000002
+ldr r3, =0x11100c//aptipc_finalize
+blx r3
+/*ldr r3, =0xf0f0f0f0
+blx menustub_checkerror_triggercrash*/
+
+ldr r3, =0x107c50//APT_CloseServHandle
+blx r3
 
 @ Recv the param sent by NS during "LibraryApplet" startup.
 mov r0, #0
@@ -545,18 +586,31 @@ str r0, [sp, #4]
 ldr r4, =0x139450 @ APT_ReceiveParameter inr0=u32* out appid inr1=u32* out signaltype inr2=buf inr3=bufsize insp0=u32* out actual parambuf size insp4=outhandle* (nullptrs are allowed)
 blx r4
 
-/*ldr r3, =0x104f54//Supposed to be apt-init but no APT service cmds get used when this is called.
-blx r3
-
-ldr r0, =3000000000
-mov r1, #0
-svc 0x0a @ Wait for APT thread to process stuff.*/
-
-ldr sp, =0x35040000 @ Start running the menuropbin.
-pop {pc}
+blx menustub_runropbin
 
 b .
 .pool
+
+.arm
+menustub_svcSleepThread:
+svc 0x0a
+bx lr
+
+menustub_svcControlMemory:
+svc 0x01
+bx lr
+
+/*menustub_checkerror_triggercrash:
+cmp r0, #0
+bxeq lr
+str r0, [r3]
+b .*/
+
+menustub_runropbin:
+ldr sp, =0x35040000 @ Start running the menuropbin.
+pop {pc}
+.pool
+
 .space (menustub_start + 0x100) - .
 menustub_end:
 .word 0
