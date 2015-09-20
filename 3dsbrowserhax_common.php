@@ -1841,7 +1841,7 @@ function generateropchain_type2()
 	$LINEARADR_CODESTART = $LINEARADR_OSSCRO + 0x6e0;
 	$CODESTART_MAPADR = $OSSCRO_MAPADR + 0x6e0;
 
-	$codebinsize = 0xa000;//0x10000;
+	$codebinsize = 0x8000;
 
 	$IFile_ctx = $ROPHEAP;
 
