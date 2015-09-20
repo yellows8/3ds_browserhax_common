@@ -43,14 +43,22 @@ bl loadsd_payload
 ldr r3, =0x80808080
 blx checkerror_triggercrash @ Trigger crash on payload loading fail.
 
-ldr r0, =0x1d6c @ src, this offset is hard-coded for "otherapp/POST5_U_21504_usa_9221.bin" for now.
+mov r0, r5
+ldr r1, =0xa000
+mov r2, sp
+bl locatepayload_data
+ldr r3, =0x77777778
+blx checkerror_triggercrash
+
+ldr r0, [sp, #0] @ Src offset in the payload.
+ldr r6, [sp, #4] @ Size of the menuropbin.
+
 ldr r1, =0xa000 @ dst0
 ldr r2, =(0xa000+0x8000) @ dst1
 add r0, r0, r5
 add r1, r1, r5
 add r2, r2, r5
 mov r3, #0
-ldr r6, =0x8000
 
 setup_initial_menuropdata: @ Copy the 0x8000-bytes from src to dst0 and dst1.
 ldr r4, [r0, r3]
@@ -311,7 +319,92 @@ add sp, sp, #0x20
 pop {r4, pc}
 .pool
 
-patchPayload: @ r0 = payloadbuf, r1 = targetProcessIndex. This is somewhat based on code from hblauncher with the same function name(minus the code for locating the dlplay memorymap structure).
+@ This extracts info from the otherapp payload. Proper metadata/whatever for this stuff would be ideal, but it has to be done this way for now.
+locatepayload_data: @ r0 = payloadbuf, r1 = size, r2 = u32* output
+push {r4, r5, r6, lr}
+mov r4, r0
+mov r5, r1
+mov r6, r2
+
+mov r0, #0 @ Locate the otherapp-payload main() .pool(the code which runs under the actual "otherapp") via the 0x6e4c5f4e value.
+ldr r1, =0x6e4c5f4e
+locatepayload_data_lp:
+ldr r2, [r4, r0]
+cmp r1, r2
+beq locatepayload_data_lpend
+
+locatepayload_data_lpnext:
+add r0, r0, #4
+cmp r0, r5
+blt locatepayload_data_lp
+mov r0, #0
+mvn r0, r0
+b locatepayload_data_end
+
+locatepayload_data_lpend: @ Locate the "b ." instruction at the end of main(), which is also right before the .pool.
+ldr r1, =0xeafffffe
+sub r0, r0, #4
+
+locatepayload_data_lp2:
+ldr r2, [r4, r0]
+cmp r1, r2
+beq locatepayload_data_lp2end
+
+locatepayload_data_lp2next:
+sub r0, r0, #4
+cmp r0, #0
+bgt locatepayload_data_lp2
+mov r0, #1
+mvn r0, r0
+b locatepayload_data_end
+
+locatepayload_data_lp2end:
+add r0, r0, #4 @ r0 = offset for main() .pool. The below code assumes that the required values are always located at the same relative-offset in the .pool.
+mov r1, r0
+add r1, r1, r4
+mov r2, r1
+ldr r1, [r1, #8] @ ptr to size.
+ldr r2, [r2, #12] @ address of menuropbin.
+
+mov r0, #2
+mvn r0, r0
+ldr r3, =0x00101000
+sub r2, r2, r3 @ r2 = offset of menuropbin, which is written to *(inr2+0).
+cmp r2, r5
+bcs locatepayload_data_end @ The menuropbin offset must be within the payloadbuf.
+str r2, [r6, #0]
+
+@ Write the size of the menuropbin to *(inr2+4).
+mov r0, #3
+mvn r0, r0
+sub r1, r1, r3
+cmp r1, r5
+bcs locatepayload_data_end @ The calculated offset in the payload must be within the input size.
+mov r0, #4
+mvn r0, r0
+ldr r1, [r4, r1]
+cmp r1, r5
+bcs locatepayload_data_end @ The menuropbin size must be within the payloadbuf.
+str r1, [r6, #4]
+
+mov r0, #5
+mvn r0, r0
+mov r3, r2
+add r3, r3, r1
+cmp r3, r5
+bcs locatepayload_data_end @ menuropbin_offset + menuropbin_size must be within the payloadbuf.
+mov r0, #6
+mvn r0, r0
+cmp r3, r2
+bcc locatepayload_data_end @ Check for integer-overflow with the above add.
+
+mov r0, #0
+
+locatepayload_data_end:
+pop {r4, r5, r6, pc}
+.pool
+
+patchPayload: @ r0 = menuropbin*, r1 = targetProcessIndex. This is somewhat based on code from hblauncher with the same function name(minus the code for locating the dlplay memorymap structure).
 push {r4, r5, r6, r7, lr}
 sub sp, sp, #4
 
