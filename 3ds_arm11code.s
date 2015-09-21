@@ -13,6 +13,31 @@ add r1, pc, #1
 bx r1
 .thumb
 
+ldr r0, =0x3a545041 @ Get APT:U handle, @ sp+0.
+str r0, [sp, #4]
+mov r0, #0x55
+str r0, [sp, #8]
+
+add r0, sp, #12
+add r1, sp, #4
+mov r2, #5
+mov r3, #0
+ldr r4, [r7, #0x18]
+blx r4 @ srv_GetServiceHandle
+ldr r3, =0x24242424
+blx checkerror_triggercrash
+
+add r0, sp, #12
+add r1, sp, #16 @ u8 out new3ds flag, this will be zero if the func returns any errors. 0 = Old3DS, 1 = New3DS.
+bl APT_CheckNew3DS
+
+ldr r0, [sp, #12]
+blx svcCloseHandle
+
+ldrb r0, [sp, #16]
+cmp r0, #0
+bne menustubcpy_end
+
 blx getaddrs_menustub
 mov r2, r1
 mov r1, r0
@@ -27,8 +52,9 @@ add r0, r0, #4
 cmp r1, r2
 blt menustubcpy
 
-@ Allocate linearmem for the hblauncher payload.
-ldr r3, =0x1a000 @ size
+@ Allocate linearmem for the hblauncher payload. The kernel clears this memory during allocation, therefore the below code will not clear this buffer.
+menustubcpy_end:
+ldr r3, =0x1b000 @ size
 mov r1, #0 @ addr
 ldr r0, =0x10003 @ operation
 mov r4, #3 @ permissions
@@ -45,13 +71,13 @@ blx checkerror_triggercrash @ Trigger crash on payload loading fail.
 
 mov r0, r5
 ldr r1, =0xa000
-mov r2, sp
+add r2, sp, #20
 bl locatepayload_data
 ldr r3, =0x77777778
 blx checkerror_triggercrash
 
-ldr r0, [sp, #0] @ Src offset in the payload.
-ldr r6, [sp, #4] @ Size of the menuropbin.
+ldr r0, [sp, #20] @ Src offset in the payload.
+ldr r6, [sp, #24] @ Size of the menuropbin.
 
 ldr r1, =0xa000 @ dst0
 ldr r2, =(0xa000+0x8000) @ dst1
@@ -70,6 +96,7 @@ blt setup_initial_menuropdata
 
 mov r0, r1
 mov r1, #1
+ldrb r2, [sp, #16]
 bl patchPayload
 ldr r3, =0xa0a0a0a0
 blx checkerror_triggercrash @ Trigger crash on payload-patching fail.
@@ -80,31 +107,62 @@ ldr r1, =0x10000
 ldr r3, [r7, #0x20]
 blx r3
 
+@ Copy the menuropbin via the GPU.
+
+ldrb r2, [sp, #16]
+cmp r2, #0
+beq menuropbin_vramcopy
+
+ldr r0, =0xa000 @ New3DS
+add r0, r0, r5
+ldr r1, =0x38c40000
+ldr r2, =0x10000
+bl gxcmd4
+
+ldr r0, =0x1a000 @ Clear the hblauncher parameter block.
+add r0, r0, r5
+ldr r1, =0x38c40000 - 0x800*2
+ldr r2, =0x800
+bl gxcmd4
+b menuropbin_vramcopy_finish
+
+menuropbin_vramcopy: @ Old3DS
 ldr r0, =0xa000
 add r0, r0, r5
 ldr r1, =0x1f500000
 ldr r2, =0x10000
 bl gxcmd4 @ Copy the menuropbin data into VRAM, which will be loaded by the below homemenu code later.
 
+menuropbin_vramcopy_finish:
 mov r0, r5
-ldr r1, =0x1a000
+ldr r1, =0x1b000
 bl freemem
 
-ldr r0, =0x3a545041 @ Get APT:U handle, @ sp+0.
-str r0, [sp, #4]
-mov r0, #0x55
-str r0, [sp, #8]
+ldrb r2, [sp, #16]
+cmp r2, #0
+bne spiderheap_memfree_finish
 
-add r0, sp, #12
+ldr r0, =0x09a00000-0xd00000 @ Free some of the spider regular-heap so that there's enough memory available to launch Home Menu.
+ldr r1, =(0xd00000)
+bl freemem
+
+spiderheap_memfree_finish:
+ldrb r2, [sp, #16]
+cmp r2, #0
+beq menutakeover_begin
+
+bl regular_menutakeover
+b shutdown_gsp
+
+menutakeover_begin:
+add r0, sp, #12 @ Get APT:U handle, @ sp+0.
 add r1, sp, #4
 mov r2, #5
 mov r3, #0
 ldr r4, [r7, #0x18]
 blx r4 @ srv_GetServiceHandle
-
-ldr r0, =0x09a00000-0xd00000 @ Free some of the spider regular-heap so that there's enough memory available to launch Home Menu.
-ldr r1, =(0xd00000)
-bl freemem
+ldr r3, =0x48484848
+blx checkerror_triggercrash
 
 add r0, sp, #12
 ldr r1, =0x101
@@ -128,6 +186,7 @@ ldr r2, =0x100
 bl gxcmd4 @ Overwrite homemenu main(), starting with the code following the nss_initialize() call.
 
 @ Shutdown GSP.
+shutdown_gsp:
 bl GSPGPU_UnregisterInterruptRelayQueue
 bl GSPGPU_ReleaseRight
 
@@ -211,6 +270,37 @@ bne APT_FinishPreloadingLibraryApplet_end
 ldr r0, [r4, #4]
 
 APT_FinishPreloadingLibraryApplet_end:
+add sp, sp, #16
+pop {r4, r5, pc}
+.pool
+
+APT_CheckNew3DS: @ inr0=handle*, inr1=u8* out
+push {r0, r1, r2, r3, r4, r5, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r2, [sp, #4]
+mov r3, #0
+strb r3, [r2]
+
+ldr r0, [sp, #0]
+
+ldr r5, =0x01020000
+str r5, [r4, #0]
+
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne APT_CheckNew3DS_end
+ldr r0, [r4, #4]
+cmp r0, #0
+bne APT_CheckNew3DS_end
+
+ldrb r1, [r4, #8]
+ldr r2, [sp, #4]
+strb r1, [r2]
+
+APT_CheckNew3DS_end:
 add sp, sp, #16
 pop {r4, r5, pc}
 .pool
@@ -404,9 +494,21 @@ locatepayload_data_end:
 pop {r4, r5, r6, pc}
 .pool
 
-patchPayload: @ r0 = menuropbin*, r1 = targetProcessIndex. This is somewhat based on code from hblauncher with the same function name(minus the code for locating the dlplay memorymap structure).
+patchPayload: @ r0 = menuropbin*, r1 = targetProcessIndex, r2 = new3ds_flag. This is somewhat based on code from hblauncher with the same function name(minus the code for locating the dlplay memorymap structure).
 push {r4, r5, r6, r7, lr}
-sub sp, sp, #4
+sub sp, sp, #8
+
+cmp r2, #0
+bne patchPayload_new3dsinit
+
+ldr r4, =(0x30000000+0x04000000)//Old3DS
+b patchPayload_init
+
+patchPayload_new3dsinit:
+ldr r4, =(0x30000000+0x07c00000)
+
+patchPayload_init:
+str r4, [sp, #4]
 
 ldr r2, =(0x8000-4)
 mov r3, #0
@@ -460,7 +562,7 @@ b patchPayload_patchlpnext
 patchPayload_patchlp_l2:
 cmp r6, #2
 bne patchPayload_patchlp_l3
-ldr r6, =(0x30000000+0x04000000)//Hard-coded for Old3DS atm.
+ldr r6, [sp, #4]
 ldr r7, [r4, #0x10]
 sub r6, r6, r7
 str r6, [r0, r3] @ APP_START_LINEAR
@@ -537,8 +639,12 @@ patchPayload_endsuccess:
 mov r0, #0
 
 patchPayload_end:
-add sp, sp, #4
+add sp, sp, #8
 pop {r4, r5, r6, r7, pc}
+.pool
+
+regular_menutakeover: @ TODO: actually implement this.
+bx lr
 .pool
 
 .arm
@@ -592,7 +698,7 @@ ldr r0, =3000000000
 mov r1, #0
 blx menustub_svcSleepThread
 
-@ Allocate linearmem with the same total size as Home Menu when it's fully loaded.
+@ Allocate linearmem with the same total size as Home Menu when it's fully loaded. Since the kernel will clear all of this during allocation, there's no need to clear the hblauncher parameter block contained within this memory anyway.
 menustub_memalloc:
 ldr r3, =(0x25652000-0x24352000) @ size
 mov r1, #0 @ addr
