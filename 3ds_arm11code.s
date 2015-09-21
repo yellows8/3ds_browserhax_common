@@ -2,7 +2,7 @@
 .global _start
 .arm
 
-//This is a loader for hblauncher, currently only for spiderhax(Old3DS system web-browser). Right now this is hard-coded for system-version v10.1 USA.
+//This is a loader for hblauncher, for the Old3DS/New3DS system web-browsers. For spiderhax(Old3DS system web-browser) this is hard-coded for system-version v10.1 USA atm.
 //Also note that APT would be broken even worse than with other hax which boot hblauncher, with the spider version of this.
 
 _start:
@@ -69,9 +69,9 @@ bl loadsd_payload
 ldr r3, =0x80808080
 blx checkerror_triggercrash @ Trigger crash on payload loading fail.
 
-mov r0, r5
-ldr r1, =0xa000
-add r2, sp, #20
+mov r0, r5 @ payloadbuf
+ldr r1, =0xa000 @ payloadbufsize
+add r2, sp, #20 @ output
 bl locatepayload_data
 ldr r3, =0x77777778
 blx checkerror_triggercrash
@@ -118,12 +118,14 @@ add r0, r0, r5
 ldr r1, =0x38c40000
 ldr r2, =0x10000
 bl gxcmd4
+blx svcSleepThread_1second
 
 ldr r0, =0x1a000 @ Clear the hblauncher parameter block.
 add r0, r0, r5
 ldr r1, =0x38c40000 - 0x800*2
 ldr r2, =0x800
 bl gxcmd4
+blx svcSleepThread_1second
 b menuropbin_vramcopy_finish
 
 menuropbin_vramcopy: @ Old3DS
@@ -132,29 +134,39 @@ add r0, r0, r5
 ldr r1, =0x1f500000
 ldr r2, =0x10000
 bl gxcmd4 @ Copy the menuropbin data into VRAM, which will be loaded by the below homemenu code later.
+blx svcSleepThread_1second
 
 menuropbin_vramcopy_finish:
-mov r0, r5
-ldr r1, =0x1b000
-bl freemem
-
-ldrb r2, [sp, #16]
-cmp r2, #0
-bne spiderheap_memfree_finish
-
-ldr r0, =0x09a00000-0xd00000 @ Free some of the spider regular-heap so that there's enough memory available to launch Home Menu.
-ldr r1, =(0xd00000)
-bl freemem
-
 spiderheap_memfree_finish:
 ldrb r2, [sp, #16]
 cmp r2, #0
 beq menutakeover_begin
 
+ldr r0, [sp, #28] @ Src offset in the payload.
+ldr r1, [sp, #32] @ Size of the loadropbin blob.
+add r0, r0, r5
 bl regular_menutakeover
+ldr r3, =0xa4a4a4a4
+blx checkerror_triggercrash
+bl aptExit
+
+mov r0, r5
+ldr r1, =0x1b000
+bl freemem
+
+ldr r3, =0xa8a8a8a8
+blx checkerror_triggercrash
 b shutdown_gsp
 
 menutakeover_begin:
+mov r0, r5
+ldr r1, =0x1b000
+bl freemem
+
+ldr r0, =0x09a00000-0xd00000 @ Free some of the spider regular-heap so that there's enough memory available to launch Home Menu.
+ldr r1, =(0xd00000)
+bl freemem
+
 add r0, sp, #12 @ Get APT:U handle, @ sp+0.
 add r1, sp, #4
 mov r2, #5
@@ -184,6 +196,7 @@ add r0, r0, r7
 ldr r1, =(0x6500000+0x14000000+0x1a40) @ .text+0x1a40
 ldr r2, =0x100
 bl gxcmd4 @ Overwrite homemenu main(), starting with the code following the nss_initialize() call.
+blx svcSleepThread_1second
 
 @ Shutdown GSP.
 shutdown_gsp:
@@ -219,8 +232,6 @@ mov r3, #0
 
 ldr r4, [r7, #0x1c] @ gxcmd4
 blx r4
-
-blx svcSleepThread_1second
 
 add sp, sp, #16
 pop {r4, pc}
@@ -270,6 +281,64 @@ bne APT_FinishPreloadingLibraryApplet_end
 ldr r0, [r4, #4]
 
 APT_FinishPreloadingLibraryApplet_end:
+add sp, sp, #16
+pop {r4, r5, pc}
+.pool
+
+APT_PrepareToStartSystemApplet: @ inr0=handle*, inr1=NS_APPID appID
+push {r0, r1, r2, r3, r4, r5, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r0, [sp, #0]
+
+ldr r5, =0x00190040
+str r5, [r4, #0]
+ldr r1, [sp, #4]
+str r1, [r4, #4]
+
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne APT_PrepareToStartSystemApplet_end
+ldr r0, [r4, #4]
+
+APT_PrepareToStartSystemApplet_end:
+add sp, sp, #16
+pop {r4, r5, pc}
+.pool
+
+APT_StartSystemApplet: @ inr0=handle*, inr1=appid, inr2=inhandle, inr3=u32 bufsize, insp0=u32* buf
+push {r0, r1, r2, r3, r4, r5, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r0, [sp, #0]
+
+ldr r5, =0x001F0084
+str r5, [r4, #0]
+ldr r1, [sp, #4] @ appid
+str r1, [r4, #4]
+mov r1, #0
+str r1, [r4, #12]
+ldr r1, [sp, #8] @ inhandle
+str r1, [r4, #16]
+ldr r1, [sp, #12] @ bufsize
+str r1, [r4, #8]
+mov r3, #2
+lsl r1, r1, #14
+orr r1, r1, r3
+str r1, [r4, #20]
+ldr r1, [sp, #28] @ buf0
+str r1, [r4, #24]
+
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne APT_StartSystemApplet_end
+ldr r0, [r4, #4]
+
+APT_StartSystemApplet_end:
 add sp, sp, #16
 pop {r4, r5, pc}
 .pool
@@ -345,9 +414,12 @@ pop {r4, pc}
 
 .type loadsd_payload, %function
 loadsd_payload: @ r0 = load addr
-push {r4, lr}
+push {r4, r5, lr}
 sub sp, sp, #0x20
 mov r4, r0
+
+blx getaddr_sdpayload_path
+mov r5, r0
 
 add r0, sp, #12 @ ctx
 
@@ -361,7 +433,7 @@ add r2, r2, #4
 cmp r2, r3
 blt loadsd_payload_ctxclr
 
-adr r1, sdpayload_path @ UTF-16 filepath
+mov r1, r5 @ UTF-16 filepath
 mov r2, #1 @ openflags
 ldr r3, [r7, #0x24]
 blx r3 @ IFile_Open
@@ -406,7 +478,7 @@ mov r0, #0
 
 loadsd_payload_end:
 add sp, sp, #0x20
-pop {r4, pc}
+pop {r4, r5, pc}
 .pool
 
 @ This extracts info from the otherapp payload. Proper metadata/whatever for this stuff would be ideal, but it has to be done this way for now.
@@ -450,31 +522,87 @@ b locatepayload_data_end
 
 locatepayload_data_lp2end:
 add r0, r0, #4 @ r0 = offset for main() .pool. The below code assumes that the required values are always located at the same relative-offset in the .pool.
-mov r1, r0
-add r1, r1, r4
-mov r2, r1
-ldr r1, [r1, #8] @ ptr to size.
-ldr r2, [r2, #12] @ address of menuropbin.
+
+mov r1, r5
+mov r2, r6
+mov r3, r0
+add r3, r3, r4
+add r3, r3, #8
+mov r0, r4
+bl locatepayload_writeoutput @ Load the menuropbin offset/size + verify them, and write to the output.
+cmp r0, #0
+bne locatepayload_data_end
+
+mov r0, #0 @ Locate the inject_payload() function .pool in the otherapp-payload(which actually runs under the "otherapp").
+ldr r1, =0x00989680
+ldr r3, =0xdeadcafe
+locatepayload_data_lp3:
+ldr r2, [r4, r0]
+cmp r1, r2
+bne locatepayload_data_lp3next
+mov r2, r0
+add r2, r2, r4
+ldr r2, [r2, #0x10]
+cmp r3, r2
+beq locatepayload_data_lp3end
+
+locatepayload_data_lp3next:
+add r0, r0, #4
+cmp r0, r5
+blt locatepayload_data_lp3
+mov r0, #7
+mvn r0, r0
+b locatepayload_data_end
+
+locatepayload_data_lp3end:
+add r0, r0, #4
+
+mov r1, r5
+mov r2, r6
+add r2, r2, #8
+mov r3, r0
+add r3, r3, r4
+mov r0, r4
+bl locatepayload_writeoutput @ Load the loadropbin blob offset/size + verify them, and write to the output+8.
+cmp r0, #0
+bne locatepayload_data_end
+
+mov r0, #0
+
+locatepayload_data_end:
+pop {r4, r5, r6, pc}
+.pool
+
+locatepayload_writeoutput: @ r0 = payloadbuf, r1 = payloadbufsize, r2 = u32* out. r3 = ptr to two words: +0 = <ptr to size in payload>, +4 = address of the binary.
+push {r4, r5, r6, lr}
+mov r4, r0
+mov r5, r1
+mov r6, r2
+
+mov r1, r3
+mov r2, r3
+ldr r1, [r1, #0] @ ptr to size.
+ldr r2, [r2, #4] @ address of the binary.
 
 mov r0, #2
 mvn r0, r0
 ldr r3, =0x00101000
-sub r2, r2, r3 @ r2 = offset of menuropbin, which is written to *(inr2+0).
+sub r2, r2, r3 @ r2 = offset of binary, which is written to *(inr2+0).
 cmp r2, r5
-bcs locatepayload_data_end @ The menuropbin offset must be within the payloadbuf.
+bcs locatepayload_writeoutput_end @ The binary offset must be within the payloadbuf.
 str r2, [r6, #0]
 
-@ Write the size of the menuropbin to *(inr2+4).
+@ Write the size of the binary to *(inr2+4).
 mov r0, #3
 mvn r0, r0
 sub r1, r1, r3
 cmp r1, r5
-bcs locatepayload_data_end @ The calculated offset in the payload must be within the input size.
+bcs locatepayload_writeoutput_end @ The calculated offset in the payload must be within the input size.
 mov r0, #4
 mvn r0, r0
 ldr r1, [r4, r1]
 cmp r1, r5
-bcs locatepayload_data_end @ The menuropbin size must be within the payloadbuf.
+bcs locatepayload_writeoutput_end @ The binary size must be within the payloadbuf.
 str r1, [r6, #4]
 
 mov r0, #5
@@ -482,15 +610,15 @@ mvn r0, r0
 mov r3, r2
 add r3, r3, r1
 cmp r3, r5
-bcs locatepayload_data_end @ menuropbin_offset + menuropbin_size must be within the payloadbuf.
+bcs locatepayload_writeoutput_end @ binary_offset + binary_size must be within the payloadbuf.
 mov r0, #6
 mvn r0, r0
 cmp r3, r2
-bcc locatepayload_data_end @ Check for integer-overflow with the above add.
+bcc locatepayload_writeoutput_end @ Check for integer-overflow with the above add.
 
 mov r0, #0
 
-locatepayload_data_end:
+locatepayload_writeoutput_end:
 pop {r4, r5, r6, pc}
 .pool
 
@@ -643,8 +771,230 @@ add sp, sp, #8
 pop {r4, r5, r6, r7, pc}
 .pool
 
-regular_menutakeover: @ TODO: actually implement this.
-bx lr
+@ This is based on code from hblauncher.
+regular_menutakeover: @ r0 = src loadropbin blob address, r1 = blob size.
+push {r4, r5, r6, lr}
+sub sp, sp, #8
+str r0, [sp, #0]
+str r1, [sp, #4]
+
+ldr r3, =0x10000 @ size
+mov r1, #0 @ addr
+ldr r0, =0x10003 @ operation
+mov r4, #3 @ permissions
+mov r2, #0 @ addr1
+blx svcControlMemory
+ldr r3, =0x74747474
+blx checkerror_triggercrash @ Trigger crash on memalloc fail.
+mov r4, r1
+
+ldr r5, =0x37c00000
+
+regular_menutakeover_lp:
+mov r0, r4 @ Flush buffer dcache.
+ldr r1, =0x10000
+ldr r3, [r7, #0x20]
+blx r3
+
+mov r0, r5
+mov r1, r4
+ldr r2, =0x10000
+bl gxcmd4 @ Copy homemenu linearmem heap data into the above buffer, then wait for the copy to finish.
+ldr r0, =1000000
+mov r1, #0
+blx svcSleepThread
+
+mov r0, #0
+regular_menutakeover_scanlp:
+mov r2, r0
+add r2, r2, r4
+ldr r1, [r2, #0x8]
+ldr r3, =0x5544
+cmp r1, r3
+bne regular_menutakeover_scanlpnext
+
+ldr r1, [r2, #0xc]
+cmp r1, #0x80
+bne regular_menutakeover_scanlpnext
+
+ldr r1, [r2, #0x18]
+cmp r1, #0
+beq regular_menutakeover_scanlpnext
+
+ldr r1, [r2, #0x7c]
+ldr r3, =0x6E4C5F4E
+cmp r1, r3
+bne regular_menutakeover_scanlpnext
+
+mov r1, r5
+add r1, r1, r0
+add r1, r1, #0x18
+mov r0, r4
+ldr r2, [sp, #0]
+ldr r3, [sp, #4]
+bl inject_payload
+mov r6, r0
+b regular_menutakeover_end
+
+regular_menutakeover_scanlpnext:
+add r0, r0, #4
+ldr r1, =(0x10000-0x10)
+cmp r0, r1
+bcc regular_menutakeover_scanlp
+
+regular_menutakeover_lpnext:
+ldr r1, =(0x10000-0x100)
+ldr r3, =(0x37c00000+0x01000000)
+add r5, r5, r1
+cmp r5, r3
+bcc regular_menutakeover_lp
+
+mov r6, #0
+mvn r6, r6
+
+regular_menutakeover_end:
+ldr r0, =100000000
+mov r1, #0
+blx svcSleepThread
+
+mov r0, r4
+ldr r1, =0x10000
+bl freemem
+
+mov r0, r6
+add sp, sp, #8
+pop {r4, r5, r6, pc}
+.pool
+
+@ This is based on code from hblauncher.
+inject_payload: @ r0 = buffer, r1 = target_address, r2 = binaryblob*, r3 = binaryblobsize.
+push {r4, r5, r6, lr}
+sub sp, sp, #12
+str r2, [sp, #0]
+str r3, [sp, #4]
+str r1, [sp, #8]
+
+mov r4, r0
+mov r5, r1
+mov r6, r1
+lsr r5, r5, #8
+lsl r5, r5, #8
+sub r6, r6, r5
+add r6, r6, r4
+
+mov r0, r4 @ Flush buffer dcache.
+ldr r1, =0x1000
+ldr r3, [r7, #0x20]
+blx r3
+
+@ Read homemenu memory + wait for the copy to finish.
+mov r0, r5
+mov r1, r4
+ldr r2, =0x1000
+bl gxcmd4
+ldr r0, =10000000
+mov r1, #0
+blx svcSleepThread
+
+mov r0, r4 @ Flush buffer dcache.
+ldr r1, =0x1000
+ldr r3, [r7, #0x20]
+blx r3
+
+mov r0, #0 @ Copy the binary into the buffer with patches when needed.
+ldr r1, [sp, #0]
+inject_payload_lp:
+ldr r2, [r1, r0]
+ldr r3, =(0xBABE0000+0x100)
+cmp r2, r3
+bcs inject_payload_lp0
+ldr r3, =(0xBABE0000-0x100+1)
+cmp r2, r3
+bcc inject_payload_lp0
+ldr r3, [sp, #8]
+add r2, r2, r3
+ldr r3, =0xBABE0000
+sub r2, r2, r3
+str r2, [r6, r0]
+b inject_payload_lpnext
+
+inject_payload_lp0:
+ldr r3, =0xDEADCAFE
+cmp r2, r3
+beq inject_payload_lpnext
+
+str r2, [r6, r0]
+
+inject_payload_lpnext:
+add r0, r0, #4
+ldr r2, [sp, #4]
+cmp r0, r2
+bcc inject_payload_lp
+
+@ Write homemenu memory + wait for the copy to finish.
+mov r0, r4 @ Flush buffer dcache.
+ldr r1, =0x1000
+ldr r3, [r7, #0x20]
+blx r3
+
+mov r0, r4
+mov r1, r5
+ldr r2, =0x1000
+bl gxcmd4
+ldr r0, =10000000
+mov r1, #0
+blx svcSleepThread
+
+mov r0, #0
+
+add sp, sp, #12
+pop {r4, r5, r6, pc}
+.pool
+
+aptExit: @ Exit from the current system-applet with APT(homemenu takeover won't work without exiting via APT properly). This is only used on New3DS.
+push {r4, r5, r6, lr}
+sub sp, sp, #16
+
+ldr r0, =0x3a545041
+str r0, [sp, #4]
+mov r0, #0x55
+str r0, [sp, #8]
+
+add r0, sp, #12 @ Get APT:U handle, @ sp+0.
+add r1, sp, #4
+mov r2, #5
+mov r3, #0
+ldr r4, [r7, #0x18]
+blx r4 @ srv_GetServiceHandle
+mov r4, r0
+cmp r0, #0
+bne aptExit_end
+
+add r0, sp, #12
+ldr r1, =0x101
+bl APT_PrepareToStartSystemApplet
+mov r4, r0
+cmp r4, #0
+bne aptExit_finished
+
+add r0, sp, #12 @ handle*
+ldr r1, =0x101 @ appid
+mov r2, #0 @ inhandle
+mov r3, #0
+str r3, [sp, #0] @ bufsize/buf*
+bl APT_StartSystemApplet
+mov r4, r0
+cmp r4, #0
+bne aptExit_finished
+
+aptExit_finished:
+ldr r0, [sp, #12]
+blx svcCloseHandle
+
+aptExit_end:
+mov r0, r4
+add sp, sp, #16
+pop {r4, r5, r6, pc}
 .pool
 
 .arm
@@ -665,6 +1015,8 @@ b .
 svcSleepThread_1second:
 ldr r0, =1000000000
 mov r1, #0
+
+svcSleepThread:
 svc 0x0a
 bx lr
 .pool
@@ -682,6 +1034,10 @@ cmp r0, #0
 bxeq lr
 str r0, [r3]
 b .
+
+getaddr_sdpayload_path:
+adr r0, sdpayload_path
+bx lr
 
 getaddrs_menustub:
 adr r0, menustub_start
