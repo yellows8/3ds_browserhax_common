@@ -1213,10 +1213,6 @@ str r1, [r0, #8]
 ldr r7, =0x0107fbc//APT_GetServHandle
 blx r7
 
-ldr r1, =(0x0032de90+20) @ Init the appid used by the below code.
-ldr r0, =0x101
-str r0, [r1]
-
 @ Auto-locate the aptipc_Initialize function, and load the APT handle address from the function's .pool too. The constants are "obfuscated" in order to avoid this code triggering on this menustub data in .text.
 add r0, sp, #16
 ldr r1, =0xe92d4070-1//push {r4, r5, r6, lr}
@@ -1252,21 +1248,30 @@ mov r3, r0
 ldr r0, =0x20000002
 blx r3//aptipc_Enable
 
+add r0, sp, #16 @ Auto-locate aptipc_ReceiveParameter.
+ldr r1, =0xe92d5ff0-1
+add r1, r1, #1
+ldr r2, =0x000d0080-1
+add r2, r2, #1
+str r2, [r0, #0]
+bl menustub_locatecode
+mov r7, r0
+
+@ Recv the param sent by NS during "LibraryApplet" startup.
+add r0, sp, #28
+ldr r1, =0x101
+mov r2, r0
+mov r3, #0
+str r3, [sp, #0]
+str r0, [sp, #4]
+str r0, [sp, #8]
+blx r7 @ aptipc_ReceiveParameter inr0=u32* out appid inr1=u32 input appid inr2=u32* out signaltype inr3=buf insp0=size insp4=u32* out actual parambuf size insp8=outhandle*
+
 ldr r5, [sp, #24] @ Close the APT handle.
 ldr r0, [r5]
 blx menustub_svcCloseHandle
 mov r1, #0
 str r1, [r5]
-
-@ Recv the param sent by NS during "LibraryApplet" startup.
-mov r0, #0
-mov r1, r0
-mov r2, r0
-mov r3, r0
-str r0, [sp, #0]
-str r0, [sp, #4]
-ldr r7, =0x139450 @ APT_ReceiveParameter inr0=u32* out appid inr1=u32* out signaltype inr2=buf inr3=bufsize insp0=u32* out actual parambuf size insp4=outhandle* (nullptrs are allowed)
-blx r7
 
 blx menustub_runropbin
 
