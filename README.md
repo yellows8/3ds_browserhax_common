@@ -48,5 +48,4 @@ Values for $arm11code_loadfromsd:
 
 # Homebrew Launcher
 This codebase is mainly intended for loading an arbitrary arm11code payload, at a vaddr which varies per title/version. Homebrew-launcher can be booted via this arm11code payload, with the loader included with this repo. The spider version is hard-coded for a specific system-version/region currently. The New3DS web-browser is supported by this too, without anything that's system-version/region specific(besides the data loaded from the payload). The loader determines whether it's running under spider or SKATER by checking the New3DS flag loaded via NS(command 0x01020000 http://3dbrew.org/wiki/NS_and_APT_Services). Therefore, do not use this payload on Old3DS outside of spider, and on New3DS do not use this loader outside of SKATER.
-With the spider version of that loader, Home Menu takeover doesn't work all the time which results in a Home Menu crash, hence in some cases the spiderhax has to be run multiple times until it completely works.
 

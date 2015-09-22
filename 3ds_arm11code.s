@@ -13,7 +13,7 @@ add r1, pc, #1
 bx r1
 .thumb
 
-ldr r0, =0x3a545041 @ Get APT:U handle, @ sp+0.
+ldr r0, =0x3a545041 @ Get APT:U handle, @ sp+12.
 str r0, [sp, #4]
 mov r0, #0x55
 str r0, [sp, #8]
@@ -167,7 +167,7 @@ ldr r0, =0x09a00000-0xd00000 @ Free some of the spider regular-heap so that ther
 ldr r1, =(0xd00000)
 bl freemem
 
-add r0, sp, #12 @ Get APT:U handle, @ sp+0.
+add r0, sp, #12 @ Get APT:U handle, @ sp+12.
 add r1, sp, #4
 mov r2, #5
 mov r3, #0
@@ -193,10 +193,9 @@ blx svcCloseHandle
 
 ldr r0, =0x1000
 add r0, r0, r7
-ldr r1, =(0x6500000+0x14000000+0x1a40) @ .text+0x1a40
+ldr r1, =(0x6500000+0x14000000+0x5380) @ .text+0x5380
 ldr r2, =0x100
-bl gxcmd4 @ Overwrite homemenu main(), starting with the code following the nss_initialize() call.
-blx svcSleepThread_1second
+bl gxcmd4 @ Overwrite the homemenu code which handles allocating+initializing the initial heaps.
 
 @ Shutdown GSP.
 shutdown_gsp:
@@ -960,7 +959,7 @@ str r0, [sp, #4]
 mov r0, #0x55
 str r0, [sp, #8]
 
-add r0, sp, #12 @ Get APT:U handle, @ sp+0.
+add r0, sp, #12 @ Get APT:U handle, @ sp+12.
 add r1, sp, #4
 mov r2, #5
 mov r3, #0
@@ -1054,7 +1053,9 @@ ldr r0, =3000000000
 mov r1, #0
 blx menustub_svcSleepThread
 
+/*
 @ Allocate linearmem with the same total size as Home Menu when it's fully loaded. Since the kernel will clear all of this during allocation, there's no need to clear the hblauncher parameter block contained within this memory anyway.
+@ This is disabled since the required memory is already allocated when this menustub runs under the homemenu heaps init function.
 menustub_memalloc:
 ldr r3, =(0x25652000-0x24352000) @ size
 mov r1, #0 @ addr
@@ -1064,6 +1065,7 @@ mov r2, #0 @ addr1
 blx menustub_svcControlMemory
 cmp r0, #0
 bne menustub_memalloc @ Sometimes spider doesn't always terminate by the time the above sleep code finishes, so keep trying to alloc memory until it's successful.
+*/
 
 ldr r3, =0x138e8c//gsp_initialize_wrap
 blx r3
@@ -1085,18 +1087,13 @@ ldr r0, =1000000000 @ Wait for the above copy to finish.
 mov r1, #0
 blx menustub_svcSleepThread
 
-ldr r3, =0x102850//fsuser_initialize
-blx r3
-
 ldr r3, =0x231084//amsys_initialize
 blx r3
 
 @ No need to initialize the "ir:rst" handle since that's left at value 0x0 when homemenu is properly running on Old3DS anyway.
 
-ldr r0, =0x0032e9bc @ Set an APT flag used by the homemenu code to determine which APT service to use: 0 = APT:A, 1 = APT:U/APT:S. In .data this is initially 0, so if this isn't changed here that homemenu code will trigger a fatalerror due to srv_GetServiceHandle failing with APT:A.
-mov r1, #1
-strb r1, [r0]
-ldr r1, =0x321daf @ Force the homemenu APT_GetServHandle code to try opening APT:S first.
+ldr r0, =0x0032e9bc
+ldr r1, =0x321daf @ Force the homemenu APT_GetServHandle code to use APT:S.
 str r1, [r0, #8]
 
 @ Do APT init for Home Menu.
