@@ -52,6 +52,12 @@ add r0, r0, #4
 cmp r1, r2
 blt menustubcpy
 
+ldr r0, =0x1000 @ Flush dcache for the menustub data.
+add r0, r0, r7
+ldr r1, =0x100
+ldr r3, [r7, #0x20]
+blx r3
+
 @ Allocate linearmem for the hblauncher payload. The kernel clears this memory during allocation, therefore the below code will not clear this buffer.
 menustubcpy_end:
 ldr r3, =0x1b000 @ size
@@ -191,11 +197,103 @@ blx checkerror_triggercrash
 ldr r0, [sp, #12]
 blx svcCloseHandle
 
+ldr r0, =(0x6500000+0x14000000+0x1000) @ .text+0x1000
+ldr r5, =0x1f510000
+ldr r6, =0x1f510000+0x5000-0x4
+ldr r4, [r6]
+mov r1, r5
+ldr r2, =0x5000
+bl gxcmd4 @ Copy 0x5000-bytes of Home Menu .text+0x1000 to VRAM+0x510000.
+
+waitcodevramcpy_finish: @ Wait for the above copy to completely finish.
+ldr r0, [r6]
+cmp r0, r4
+beq waitcodevramcpy_finish
+
+@ Begin auto-locating the target code for homemenu takeover.
+ldr r4, =0x00101000
+mov r0, r4
+mov r1, r5
+
+ldr r2, =0xef000003 @ Locate the "svc 0x03" instruction, which is the function right before main().
+_start_locatecode_l0:
+ldr r3, [r1]
+add r1, r1, #4
+add r0, r0, #4
+cmp r3, r2
+bne _start_locatecode_l0
+
+ldr r2, =0xe3a00000 @ Locate the bl instruction following a "mov r0, #0", in main().
+_start_locatecode_l1:
+ldr r3, [r1]
+add r1, r1, #4
+add r0, r0, #4
+cmp r3, r2
+bne _start_locatecode_l1
+
+ldr r1, [r1]
+blx parse_branch
+
+add r0, r0, #0x18 @ Get the address of function begin called with the bl-instruction @ +0x18 in the above function.
+mov r1, r0
+sub r1, r1, r4
+add r1, r1, r5
+
+ldr r1, [r1]
+blx parse_branch
+mov r1, r0
+sub r1, r1, r4
+add r1, r1, r5 @ r0/r1 is now the addresses for the target heap-init function.
+
+mov r6, #2 @ Search for two "cmp <reg>, #100" instructions.
+_start_locatecode_l2:
+ldr r3, [r1]
+add r1, r1, #4
+add r0, r0, #4
+ldr r2, =0xf0000
+bic r3, r3, r2
+ldr r2, =0xe3500064
+cmp r3, r2
+bne _start_locatecode_l2
+sub r6, r6, #1
+cmp r6, #0
+bgt _start_locatecode_l2
+
+mov r6, #9 @ Search for 9 bl instructions.
+_start_locatecode_l3:
+ldrb r3, [r1, #3]
+add r1, r1, #4
+add r0, r0, #4
+cmp r3, #0xeb
+bne _start_locatecode_l3
+sub r6, r6, #1
+cmp r6, #0
+bgt _start_locatecode_l3
+
+sub r0, r0, #4
+
+mov r3, #4 @ Clear the low 4-bits for GPU alignment.
+lsr r0, r0, r3
+lsl r0, r0, r3
+sub r0, r0, r4
+mov r3, r0
+
 ldr r0, =0x1000
+ldr r1, =(0x6500000+0x14000000) @ .text+<above offset>
+add r1, r1, r3
+add r1, r1, r0
 add r0, r0, r7
-ldr r1, =(0x6500000+0x14000000+0x5380) @ .text+0x5380
 ldr r2, =0x100
 bl gxcmd4 @ Overwrite the homemenu code which handles allocating+initializing the initial heaps.
+
+ldr r0, =100000
+mov r1, #0
+blx svcSleepThread
+
+ldr r0, =(0x6500000+0x14000000) @ .text+0
+ldr r1, =0x1f510000
+ldr r2, =0xf0000
+bl gxcmd4 @ Copy the first 0xf0000-bytes of Home Menu .text to VRAM+0x510000, for use by the menustub.
 
 @ Shutdown GSP.
 shutdown_gsp:
@@ -1033,6 +1131,21 @@ cmp r0, #0
 bxeq lr
 str r0, [r3]
 b .
+
+parse_branch: @ r0 = addr of branch instruction, r1 = branch instruction u32 value
+cmp r1, #0
+ldreq r1, [r0]
+lsl r1, r1, #8
+lsr r1, r1, #8
+tst r1, #0x800000
+moveq r2, #0
+ldrne r2, =0xff000000
+orr r2, r2, r1
+lsl r2, r2, #2
+add r0, r0, #8
+add r0, r0, r2
+bx lr
+.pool
 
 getaddr_sdpayload_path:
 adr r0, sdpayload_path
