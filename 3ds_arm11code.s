@@ -1205,14 +1205,6 @@ blx r3
 
 @ No need to initialize the "ir:rst" handle since that's left at value 0x0 when homemenu is properly running on Old3DS anyway.
 
-ldr r0, =0x0032e9bc
-ldr r1, =0x321daf @ Force the homemenu APT_GetServHandle code to use APT:S.
-str r1, [r0, #8]
-
-@ Do APT init for Home Menu.
-ldr r7, =0x0107fbc//APT_GetServHandle
-blx r7
-
 @ Auto-locate the aptipc_Initialize function, and load the APT handle address from the function's .pool too. The constants are "obfuscated" in order to avoid this code triggering on this menustub data in .text.
 add r0, sp, #16
 ldr r1, =0xe92d4070-1//push {r4, r5, r6, lr}
@@ -1225,13 +1217,35 @@ str r2, [r0, #0]
 str r3, [r0, #4]
 bl menustub_locatecode
 
-mov r7, r0
+str r0, [sp, #32]
 ldr r2, [r1, #8]
 str r2, [sp, #24] @ APT handle*
 
+add r0, sp, #16 @ Auto-locate APT_GetServHandle.
+ldr r1, =0xe92d41f0-1//push {r4, r5, r6, r7, r8, lr}
+add r1, r1, #1
+ldr r2, =0xe0a0cff9-1
+add r2, r2, #1
+ldr r3, [sp, #24]
+str r2, [r0, #0]
+str r3, [r0, #4]
+bl menustub_locatecode
+mov r3, r0
+
+sub r1, r1, #4
+ldr r1, [r1]
+
+@ Force the homemenu APT_GetServHandle code to use APT:S.
+adr r0, menustub_apts_servicestr
+str r0, [r1, #8]
+@ Do APT init for Home Menu.
+blx r3//APT_GetServHandle
+
+ldr r0, =0x101
 ldr r1, =0x20000002
 mov r2, sp
 mov r3, sp
+ldr r7, [sp, #32]
 blx r7//aptipc_Initialize
 
 add r0, sp, #16 @ Auto-locate aptipc_Enable.
@@ -1325,6 +1339,9 @@ menustub_runropbin:
 ldr sp, =0x35040000 @ Start running the menuropbin.
 pop {pc}
 .pool
+
+menustub_apts_servicestr:
+.string "APT:S"
 
 .space (menustub_start + 0x1b0) - .
 menustub_end:
