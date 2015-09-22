@@ -2,7 +2,7 @@
 .global _start
 .arm
 
-//This is a loader for hblauncher, for the Old3DS/New3DS system web-browsers. For spiderhax(Old3DS system web-browser) this is hard-coded for system-version v10.1 USA atm.
+//This is a loader for hblauncher, for the Old3DS/New3DS system web-browsers.
 //Also note that APT would be broken even worse than with other hax which boot hblauncher, with the spider version of this.
 
 _start:
@@ -1189,8 +1189,27 @@ bne menustub_memalloc @ Sometimes spider doesn't always terminate by the time th
 
 @ The constants below for auto-locating are "obfuscated" in order to avoid this code triggering on this menustub data in .text.
 
-ldr r3, =0x138e8c//gsp_initialize_wrap
-blx r3
+@ Auto-locate the gsp_initialize function.
+ldr r0, =(~0x3a707367)
+ldr r1, =(~0x7570473a)
+mvn r0, r0
+mvn r1, r1
+str r0, [sp, #0x24]
+str r1, [sp, #0x28]
+
+mov r0, #0x10
+str r0, [sp, #0]
+ldr r0, =0xe8bd4070-1//pop {r4, r5, r6, lr}
+add r0, r0, #1
+str r0, [sp, #4]
+add r0, sp, #0x24
+mov r1, #9
+ldr r2, =0xe92d4070-1//push {r4, r5, r6, lr}
+add r2, r2, #1
+ldr r3, =0x80000004
+bl menustub_locateservinitcode
+
+blx r0//gsp_initialize
 
 add r0, sp, #0x10 @ Auto-locate gxcmd4.
 ldr r1, =0xe92d43f0-1//push {r4, r5, r6, r7, r8, r9, lr}
@@ -1232,6 +1251,9 @@ add r0, sp, #0x24
 mov r1, #7
 ldr r2, =0xe92d4010-1
 add r2, r2, #1
+mov r3, #0
+str r3, [sp, #0]
+str r3, [sp, #4]
 bl menustub_locateservinitcode
 
 blx r0//amsys_initialize
@@ -1359,11 +1381,14 @@ mov r1, r5
 pop {r4, r5, pc}
 .pool
 
-menustub_locateservinitcode: @ r0 = servicenamestr*, r1 = stringlen including null-terminator, r2 = r1 value to pass to menustub_locatecode().
+menustub_locateservinitcode: @ r0 = servicenamestr*, r1 = stringlen including null-terminator, r2 = r1 value to pass to menustub_locatecode(). r3 = <see below when this has bit31 set>. The rest only matter when r3 bit31 is set: sp0 = when a matching value is found in .pool where sp0 is non-zero, subtract the current address by this value and compare with the word loaded from there with the data from sp4. sp4 = see sp0 info.
+@ When inr3 bit31 is set, this code will then do the following with bit31 cleared: after locating the address of the service-str, it will then search for a ptr for this in memory. Once found, the current address is subtracted by the masked inr3 value, then it will continue to search for the target function's .pool with this new address.
 push {r4, r5, r6, lr}
+sub sp, sp, #4
 mov r4, r0
 mov r5, r1
 mov r6, r2
+str r3, [sp, #0]
 
 @ Locate the specified string in the homemenu .(ro)data.
 
@@ -1385,19 +1410,50 @@ add r0, r0, #1
 b menustub_locateservinitcode_l0
 
 menustub_locateservinitcode_lpfinish: @ At this point r0 is the address of the string mentioned above.
+ldr r3, [sp, #0]
+cmp r3, #0
+bge menustub_locateservinitcode_searchpool @ Check for bit31.
+mov r1, #1
+lsl r3, r3, r1
+lsr r3, r3, r1
 
-ldr r1, =0x00100000 @ Locate the .pool of the target function.
+ldr r1, =0x00100000 @ Locate the base address where there's a ptr to the service-str.
 menustub_locateservinitcode_l1:
 ldr r2, [r1]
 add r1, r1, #4
 cmp r2, r0
 bne menustub_locateservinitcode_l1
 sub r1, r1, #4
+sub r0, r1, r3
 
+menustub_locateservinitcode_searchpool:
+ldr r1, =0x00100000 @ Locate the .pool of the target function.
+menustub_locateservinitcode_l2:
+ldr r2, [r1]
+add r1, r1, #4
+cmp r2, r0
+bne menustub_locateservinitcode_l2
+sub r1, r1, #4
+
+ldr r3, [sp, #20]
+cmp r3, #0
+beq menustub_locateservinitcode_searchpool_finish
+mov r5, r1
+sub r5, r5, r3
+ldr r2, [r5]
+ldr r3, [sp, #24]
+add r1, r1, #4
+cmp r2, r3
+bne menustub_locateservinitcode_l2
+
+sub r1, r1, #4
+
+menustub_locateservinitcode_searchpool_finish:
 mov r2, r1
 mov r0, #0
 mov r1, r6
 bl menustub_locatecode
+add sp, sp, #4
 pop {r4, r5, r6, pc}
 .pool
 
