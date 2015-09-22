@@ -54,7 +54,7 @@ blt menustubcpy
 
 ldr r0, =0x1000 @ Flush dcache for the menustub data.
 add r0, r0, r7
-ldr r1, =0x100
+ldr r1, =0x130
 ldr r3, [r7, #0x20]
 blx r3
 
@@ -271,6 +271,7 @@ cmp r6, #0
 bgt _start_locatecode_l3
 
 sub r0, r0, #4
+sub r0, r0, #0x20
 
 mov r3, #4 @ Clear the low 4-bits for GPU alignment.
 lsr r0, r0, r3
@@ -283,9 +284,9 @@ ldr r1, =(0x6500000+0x14000000) @ .text+<above offset>
 add r1, r1, r3
 add r1, r1, r0
 add r0, r0, r7
-ldr r2, =0x100
+ldr r2, =0x130
 bl gxcmd4 @ Overwrite the homemenu code which handles allocating+initializing the initial heaps.
-
+/*
 ldr r0, =100000
 mov r1, #0
 blx svcSleepThread
@@ -293,8 +294,8 @@ blx svcSleepThread
 ldr r0, =(0x6500000+0x14000000) @ .text+0
 ldr r1, =0x1f510000
 ldr r2, =0xf0000
-bl gxcmd4 @ Copy the first 0xf0000-bytes of Home Menu .text to VRAM+0x510000, for use by the menustub.
-
+bl gxcmd4 @ Copy the first 0xf0000-bytes of Home Menu .text to VRAM+0x510000.
+*/
 @ Shutdown GSP.
 shutdown_gsp:
 bl GSPGPU_UnregisterInterruptRelayQueue
@@ -1180,6 +1181,8 @@ cmp r0, #0
 bne menustub_memalloc @ Sometimes spider doesn't always terminate by the time the above sleep code finishes, so keep trying to alloc memory until it's successful.
 */
 
+ldr r4, =0x00100000
+
 ldr r3, =0x138e8c//gsp_initialize_wrap
 blx r3
 
@@ -1193,8 +1196,8 @@ str r3, [sp, #4]
 str r3, [sp, #8]
 mov r3, #0x8
 str r3, [sp, #12]
-ldr r4, =0x14b9cc//gxcmd4
-blx r4
+ldr r7, =0x14b9cc//gxcmd4
+blx r7
 
 ldr r0, =1000000000 @ Wait for the above copy to finish.
 mov r1, #0
@@ -1210,25 +1213,56 @@ ldr r1, =0x321daf @ Force the homemenu APT_GetServHandle code to use APT:S.
 str r1, [r0, #8]
 
 @ Do APT init for Home Menu.
-ldr r3, =0x0107fbc//APT_GetServHandle
-blx r3
+ldr r7, =0x0107fbc//APT_GetServHandle
+blx r7
 
 ldr r1, =(0x0032de90+20) @ Init the appid used by the below code.
 ldr r0, =0x101
 str r0, [r1]
 
+mov r0, r4 @ Auto-locate the aptipc_Initialize function, and load the APT handle address from the function's .pool too. The constants are "obfuscated" in order to avoid this code triggering on this menustub data in .text.
+menustub_locatecode_aptint_l0:
+ldr r2, [r0]
+add r0, r0, #4
+ldr r3, =0xe8bd8070-1 //pop {r4, r5, r6, pc}
+add r3, r3, #1
+cmp r2, r3
+bne menustub_locatecode_aptint_l0
+ldr r3, =0x00020080-1
+add r3, r3, #1
+ldr r2, [r0]
+cmp r2, r3
+bne menustub_locatecode_aptint_l0
+
+ldr r2, [r0, #4]
+str r2, [sp, #16] @ APT handle*
+
+sub r0, r0, #4
+
+ldr r3, =0xe92d4070-1//push {r4, r5, r6, lr}
+add r3, r3, #1
+menustub_locatecode_aptint_l1:
+ldr r2, [r0]
+sub r0, r0, #4
+cmp r2, r3
+bne menustub_locatecode_aptint_l1
+add r0, r0, #4
+mov r7, r0
+
 ldr r1, =0x20000002
 mov r2, sp
 mov r3, sp
-ldr r4, =0x107e64//aptipc_Initialize
-blx r4
+blx r7//aptipc_Initialize
 
 ldr r0, =0x20000002
 ldr r3, =0x11100c//aptipc_finalize
 blx r3
 
-ldr r3, =0x107c50//APT_CloseServHandle
-blx r3
+ldr r5, [sp, #16] @ Close the APT handle.
+ldr r0, [r5]
+blx menustub_svcCloseHandle
+mov r1, #0
+str r1, [r5]
 
 @ Recv the param sent by NS during "LibraryApplet" startup.
 mov r0, #0
@@ -1237,8 +1271,8 @@ mov r2, r0
 mov r3, r0
 str r0, [sp, #0]
 str r0, [sp, #4]
-ldr r4, =0x139450 @ APT_ReceiveParameter inr0=u32* out appid inr1=u32* out signaltype inr2=buf inr3=bufsize insp0=u32* out actual parambuf size insp4=outhandle* (nullptrs are allowed)
-blx r4
+ldr r7, =0x139450 @ APT_ReceiveParameter inr0=u32* out appid inr1=u32* out signaltype inr2=buf inr3=bufsize insp0=u32* out actual parambuf size insp4=outhandle* (nullptrs are allowed)
+blx r7
 
 blx menustub_runropbin
 
@@ -1254,12 +1288,16 @@ menustub_svcControlMemory:
 svc 0x01
 bx lr
 
+menustub_svcCloseHandle:
+svc 0x23
+bx lr
+
 menustub_runropbin:
 ldr sp, =0x35040000 @ Start running the menuropbin.
 pop {pc}
 .pool
 
-.space (menustub_start + 0x100) - .
+.space (menustub_start + 0x130) - .
 menustub_end:
 .word 0
 
