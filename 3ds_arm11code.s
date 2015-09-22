@@ -54,7 +54,7 @@ blt menustubcpy
 
 ldr r0, =0x1000 @ Flush dcache for the menustub data.
 add r0, r0, r7
-ldr r1, =0x130
+ldr r1, =0x1b0
 ldr r3, [r7, #0x20]
 blx r3
 
@@ -259,7 +259,7 @@ sub r6, r6, #1
 cmp r6, #0
 bgt _start_locatecode_l2
 
-mov r6, #9 @ Search for 9 bl instructions.
+mov r6, #4 @ Search for 4 bl instructions.
 _start_locatecode_l3:
 ldrb r3, [r1, #3]
 add r1, r1, #4
@@ -271,7 +271,6 @@ cmp r6, #0
 bgt _start_locatecode_l3
 
 sub r0, r0, #4
-sub r0, r0, #0x20
 
 mov r3, #4 @ Clear the low 4-bits for GPU alignment.
 lsr r0, r0, r3
@@ -284,8 +283,8 @@ ldr r1, =(0x6500000+0x14000000) @ .text+<above offset>
 add r1, r1, r3
 add r1, r1, r0
 add r0, r0, r7
-ldr r2, =0x130
-bl gxcmd4 @ Overwrite the homemenu code which handles allocating+initializing the initial heaps.
+ldr r2, =0x1b0
+bl gxcmd4 @ Overwrite the homemenu code which handles allocating+initializing the initial heaps(this target code does heap init after the allocation was all finished).
 /*
 ldr r0, =100000
 mov r1, #0
@@ -1181,8 +1180,6 @@ cmp r0, #0
 bne menustub_memalloc @ Sometimes spider doesn't always terminate by the time the above sleep code finishes, so keep trying to alloc memory until it's successful.
 */
 
-ldr r4, =0x00100000
-
 ldr r3, =0x138e8c//gsp_initialize_wrap
 blx r3
 
@@ -1220,45 +1217,42 @@ ldr r1, =(0x0032de90+20) @ Init the appid used by the below code.
 ldr r0, =0x101
 str r0, [r1]
 
-mov r0, r4 @ Auto-locate the aptipc_Initialize function, and load the APT handle address from the function's .pool too. The constants are "obfuscated" in order to avoid this code triggering on this menustub data in .text.
-menustub_locatecode_aptint_l0:
-ldr r2, [r0]
-add r0, r0, #4
-ldr r3, =0xe8bd8070-1 //pop {r4, r5, r6, pc}
-add r3, r3, #1
-cmp r2, r3
-bne menustub_locatecode_aptint_l0
+@ Auto-locate the aptipc_Initialize function, and load the APT handle address from the function's .pool too. The constants are "obfuscated" in order to avoid this code triggering on this menustub data in .text.
+add r0, sp, #16
+ldr r1, =0xe92d4070-1//push {r4, r5, r6, lr}
+add r1, r1, #1
+ldr r2, =0xe8bd8070-1 //pop {r4, r5, r6, pc}
+add r2, r2, #1
 ldr r3, =0x00020080-1
 add r3, r3, #1
-ldr r2, [r0]
-cmp r2, r3
-bne menustub_locatecode_aptint_l0
+str r2, [r0, #0]
+str r3, [r0, #4]
+bl menustub_locatecode
 
-ldr r2, [r0, #4]
-str r2, [sp, #16] @ APT handle*
-
-sub r0, r0, #4
-
-ldr r3, =0xe92d4070-1//push {r4, r5, r6, lr}
-add r3, r3, #1
-menustub_locatecode_aptint_l1:
-ldr r2, [r0]
-sub r0, r0, #4
-cmp r2, r3
-bne menustub_locatecode_aptint_l1
-add r0, r0, #4
 mov r7, r0
+ldr r2, [r1, #8]
+str r2, [sp, #24] @ APT handle*
 
 ldr r1, =0x20000002
 mov r2, sp
 mov r3, sp
 blx r7//aptipc_Initialize
 
-ldr r0, =0x20000002
-ldr r3, =0x11100c//aptipc_Enable
-blx r3
+add r0, sp, #16 @ Auto-locate aptipc_Enable.
+ldr r1, =0xe92d4010-1//push {r4, lr}
+add r1, r1, #1
+ldr r2, =0x00030040-1
+add r2, r2, #1
+ldr r3, [sp, #24]
+str r2, [r0, #0]
+str r3, [r0, #4]
+bl menustub_locatecode
+mov r3, r0
 
-ldr r5, [sp, #16] @ Close the APT handle.
+ldr r0, =0x20000002
+blx r3//aptipc_Enable
+
+ldr r5, [sp, #24] @ Close the APT handle.
 ldr r0, [r5]
 blx menustub_svcCloseHandle
 mov r1, #0
@@ -1279,6 +1273,36 @@ blx menustub_runropbin
 b .
 .pool
 
+@ r0 = u32* buffer for data at the end of the function to search for, size is hard-coded for 2 words. r1 = wordvalue to search for going backwards from the previously located data, for the start address of the function.
+@ This returns the address of the located function in r0, and the address of the first word in the input buffer for the function in .text.
+menustub_locatecode:
+push {r4, r5, lr}
+ldr r4, =0x00100000
+
+menustub_locatecode_l0:
+ldr r2, [r4]
+add r4, r4, #4
+ldr r3, [r0, #0]
+cmp r2, r3
+bne menustub_locatecode_l0
+ldr r2, [r4]
+ldr r3, [r0, #4]
+cmp r2, r3
+bne menustub_locatecode_l0
+sub r4, r4, #4
+mov r5, r4
+
+menustub_locatecode_l1:
+ldr r2, [r4]
+sub r4, r4, #4
+cmp r2, r1
+bne menustub_locatecode_l1
+add r0, r4, #4
+
+mov r1, r5
+pop {r4, r5, pc}
+.pool
+
 .arm
 menustub_svcSleepThread:
 svc 0x0a
@@ -1297,7 +1321,7 @@ ldr sp, =0x35040000 @ Start running the menuropbin.
 pop {pc}
 .pool
 
-.space (menustub_start + 0x130) - .
+.space (menustub_start + 0x1b0) - .
 menustub_end:
 .word 0
 
