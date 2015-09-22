@@ -1255,7 +1255,7 @@ mov r3, sp
 blx r7//aptipc_Initialize
 
 ldr r0, =0x20000002
-ldr r3, =0x11100c//aptipc_finalize
+ldr r3, =0x11100c//aptipc_Enable
 blx r3
 
 ldr r5, [sp, #16] @ Close the APT handle.
