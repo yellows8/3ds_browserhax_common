@@ -54,7 +54,7 @@ blt menustubcpy
 
 ldr r0, =0x1000 @ Flush dcache for the menustub data.
 add r0, r0, r7
-ldr r1, =0x1b0
+ldr r1, =0x1c0
 ldr r3, [r7, #0x20]
 blx r3
 
@@ -271,6 +271,7 @@ cmp r6, #0
 bgt _start_locatecode_l3
 
 sub r0, r0, #4
+sub r0, r0, #0x10
 
 mov r3, #4 @ Clear the low 4-bits for GPU alignment.
 lsr r0, r0, r3
@@ -283,7 +284,7 @@ ldr r1, =(0x6500000+0x14000000) @ .text+<above offset>
 add r1, r1, r3
 add r1, r1, r0
 add r0, r0, r7
-ldr r2, =0x1b0
+ldr r2, =0x1c0
 bl gxcmd4 @ Overwrite the homemenu code which handles allocating+initializing the initial heaps(this target code does heap init after the allocation was all finished).
 /*
 ldr r0, =100000
@@ -1151,10 +1152,16 @@ getaddr_sdpayload_path:
 adr r0, sdpayload_path
 bx lr
 
+sdpayload_path:
+.string16 "sdmc:/browserhax_hblauncher_payload.bin"
+
+.align 2
+
 getaddrs_menustub:
 adr r0, menustub_start
-adr r1, menustub_end
-bx lr
+b getaddrs_menustub_end
+
+.align 2
 
 menustub_start:
 add r1, pc, #1
@@ -1180,6 +1187,8 @@ cmp r0, #0
 bne menustub_memalloc @ Sometimes spider doesn't always terminate by the time the above sleep code finishes, so keep trying to alloc memory until it's successful.
 */
 
+@ The constants below for auto-locating are "obfuscated" in order to avoid this code triggering on this menustub data in .text.
+
 ldr r3, =0x138e8c//gsp_initialize_wrap
 blx r3
 
@@ -1188,11 +1197,11 @@ ldr r0, =0x1f500000 @ src
 ldr r1, =0x35040000 @ dst
 ldr r2, =0x10000 @ size
 mov r3, #0
-str r3, [sp, #0]
-str r3, [sp, #4]
-str r3, [sp, #8]
+str r3, [sp, #0x0]
+str r3, [sp, #0x4]
+str r3, [sp, #0x8]
 mov r3, #0x8
-str r3, [sp, #12]
+str r3, [sp, #0xc]
 ldr r7, =0x14b9cc//gxcmd4
 blx r7
 
@@ -1200,13 +1209,55 @@ ldr r0, =1000000000 @ Wait for the above copy to finish.
 mov r1, #0
 blx menustub_svcSleepThread
 
-ldr r3, =0x231084//amsys_initialize
-blx r3
+ldr r0, =(~0x733a6d61) @ Locate the "am:sys" string in the homemenu .(ro)data.
+ldr r1, =(~0x7379)
+mvn r0, r0
+mvn r1, r1
+str r0, [sp, #0x24]
+str r1, [sp, #0x28]
+
+ldr r0, =0x00100000
+add r4, sp, #0x24
+mov r1, #0
+menustub_amsysinitlocate_l0:
+ldrb r2, [r0, r1]
+ldrb r3, [r4, r1]
+cmp r2, r3
+bne menustub_amsysinitlocate_l0_lpnext
+add r1, r1, #1
+cmp r1, #7
+bge menustub_amsysinitlocate_l0_lpfinish
+b menustub_amsysinitlocate_l0
+
+menustub_amsysinitlocate_l0_lpnext:
+mov r1, #0
+add r0, r0, #1
+b menustub_amsysinitlocate_l0
+
+menustub_amsysinitlocate_l0_lpfinish: @ At this point r0 is the address of the "am:sys" string mentioned above.
+
+ldr r1, =0x00100000 @ Locate the .pool of the amsys_initialize function.
+menustub_amsysinitlocate_l1:
+ldr r2, [r1]
+add r1, r1, #4
+cmp r2, r0
+bne menustub_amsysinitlocate_l1
+sub r1, r1, #4
+
+ldr r3, =0xe92d4010//push {r4, lr}
+menustub_amsysinitlocate_l2:
+ldr r2, [r1]
+sub r1, r1, #4
+cmp r2, r3
+bne menustub_amsysinitlocate_l2
+add r3, r1, #4
+
+blx r3//amsys_initialize
 
 @ No need to initialize the "ir:rst" handle since that's left at value 0x0 when homemenu is properly running on Old3DS anyway.
 
-@ Auto-locate the aptipc_Initialize function, and load the APT handle address from the function's .pool too. The constants are "obfuscated" in order to avoid this code triggering on this menustub data in .text.
-add r0, sp, #16
+@ Auto-locate the aptipc_Initialize function, and load the APT handle address from the function's .pool too.
+add r0, sp, #0x10
 ldr r1, =0xe92d4070-1//push {r4, r5, r6, lr}
 add r1, r1, #1
 ldr r2, =0xe8bd8070-1 //pop {r4, r5, r6, pc}
@@ -1217,16 +1268,16 @@ str r2, [r0, #0]
 str r3, [r0, #4]
 bl menustub_locatecode
 
-str r0, [sp, #32]
-ldr r2, [r1, #8]
-str r2, [sp, #24] @ APT handle*
+str r0, [sp, #0x20]
+ldr r2, [r1, #0x8]
+str r2, [sp, #0x18] @ APT handle*
 
-add r0, sp, #16 @ Auto-locate APT_GetServHandle.
+add r0, sp, #0x10 @ Auto-locate APT_GetServHandle.
 ldr r1, =0xe92d41f0-1//push {r4, r5, r6, r7, r8, lr}
 add r1, r1, #1
 ldr r2, =0xe0a0cff9-1
 add r2, r2, #1
-ldr r3, [sp, #24]
+ldr r3, [sp, #0x18]
 str r2, [r0, #0]
 str r3, [r0, #4]
 bl menustub_locatecode
@@ -1245,7 +1296,7 @@ ldr r0, =0x101
 ldr r1, =0x20000002
 mov r2, sp
 mov r3, sp
-ldr r7, [sp, #32]
+ldr r7, [sp, #0x20]
 blx r7//aptipc_Initialize
 
 add r0, sp, #16 @ Auto-locate aptipc_Enable.
@@ -1253,7 +1304,7 @@ ldr r1, =0xe92d4010-1//push {r4, lr}
 add r1, r1, #1
 ldr r2, =0x00030040-1
 add r2, r2, #1
-ldr r3, [sp, #24]
+ldr r3, [sp, #0x18]
 str r2, [r0, #0]
 str r3, [r0, #4]
 bl menustub_locatecode
@@ -1262,7 +1313,7 @@ mov r3, r0
 ldr r0, =0x20000002
 blx r3//aptipc_Enable
 
-add r0, sp, #16 @ Auto-locate aptipc_ReceiveParameter.
+add r0, sp, #0x10 @ Auto-locate aptipc_ReceiveParameter.
 ldr r1, =0xe92d5ff0-1
 add r1, r1, #1
 ldr r2, =0x000d0080-1
@@ -1272,16 +1323,16 @@ bl menustub_locatecode
 mov r7, r0
 
 @ Recv the param sent by NS during "LibraryApplet" startup.
-add r0, sp, #28
+add r0, sp, #0x1c
 ldr r1, =0x101
 mov r2, r0
 mov r3, #0
-str r3, [sp, #0]
-str r0, [sp, #4]
-str r0, [sp, #8]
+str r3, [sp, #0x0]
+str r0, [sp, #0x4]
+str r0, [sp, #0x8]
 blx r7 @ aptipc_ReceiveParameter inr0=u32* out appid inr1=u32 input appid inr2=u32* out signaltype inr3=buf insp0=size insp4=u32* out actual parambuf size insp8=outhandle*
 
-ldr r5, [sp, #24] @ Close the APT handle.
+ldr r5, [sp, #0x18] @ Close the APT handle.
 ldr r0, [r5]
 blx menustub_svcCloseHandle
 mov r1, #0
@@ -1342,11 +1393,13 @@ pop {pc}
 
 menustub_apts_servicestr:
 .string "APT:S"
+.align 2
 
-.space (menustub_start + 0x1b0) - .
+.space (menustub_start + 0x1c0) - .
 menustub_end:
 .word 0
 
-sdpayload_path:
-.string16 "sdmc:/browserhax_hblauncher_payload.bin"
+getaddrs_menustub_end:
+adr r1, menustub_end
+bx lr
 
