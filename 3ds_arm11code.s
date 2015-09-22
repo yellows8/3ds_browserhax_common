@@ -54,7 +54,7 @@ blt menustubcpy
 
 ldr r0, =0x1000 @ Flush dcache for the menustub data.
 add r0, r0, r7
-ldr r1, =0x1c0
+ldr r1, =0x320
 ldr r3, [r7, #0x20]
 blx r3
 
@@ -245,7 +245,7 @@ mov r1, r0
 sub r1, r1, r4
 add r1, r1, r5 @ r0/r1 is now the addresses for the target heap-init function.
 
-mov r6, #2 @ Search for two "cmp <reg>, #100" instructions.
+/*mov r6, #2 @ Search for two "cmp <reg>, #100" instructions.
 _start_locatecode_l2:
 ldr r3, [r1]
 add r1, r1, #4
@@ -272,6 +272,9 @@ bgt _start_locatecode_l3
 
 sub r0, r0, #4
 sub r0, r0, #0x10
+*/
+
+add r0, r0, #0x10
 
 mov r3, #4 @ Clear the low 4-bits for GPU alignment.
 lsr r0, r0, r3
@@ -284,8 +287,8 @@ ldr r1, =(0x6500000+0x14000000) @ .text+<above offset>
 add r1, r1, r3
 add r1, r1, r0
 add r0, r0, r7
-ldr r2, =0x1c0
-bl gxcmd4 @ Overwrite the homemenu code which handles allocating+initializing the initial heaps(this target code does heap init after the allocation was all finished).
+ldr r2, =0x320
+bl gxcmd4 @ Overwrite the homemenu code which handles allocating+initializing the initial heaps(the target code is near the beginning of the function).
 /*
 ldr r0, =100000
 mov r1, #0
@@ -1173,9 +1176,7 @@ ldr r0, =3000000000
 mov r1, #0
 blx menustub_svcSleepThread
 
-/*
 @ Allocate linearmem with the same total size as Home Menu when it's fully loaded. Since the kernel will clear all of this during allocation, there's no need to clear the hblauncher parameter block contained within this memory anyway.
-@ This is disabled since the required memory is already allocated when this menustub runs under the homemenu heaps init function.
 menustub_memalloc:
 ldr r3, =(0x25652000-0x24352000) @ size
 mov r1, #0 @ addr
@@ -1185,12 +1186,23 @@ mov r2, #0 @ addr1
 blx menustub_svcControlMemory
 cmp r0, #0
 bne menustub_memalloc @ Sometimes spider doesn't always terminate by the time the above sleep code finishes, so keep trying to alloc memory until it's successful.
-*/
 
 @ The constants below for auto-locating are "obfuscated" in order to avoid this code triggering on this menustub data in .text.
 
 ldr r3, =0x138e8c//gsp_initialize_wrap
 blx r3
+
+add r0, sp, #0x10 @ Auto-locate gxcmd4.
+ldr r1, =0xe92d43f0-1//push {r4, r5, r6, r7, r8, r9, lr}
+add r1, r1, #1
+ldr r2, =0xe3a0c004-1//mov ip, #4
+add r2, r2, #1
+ldr r3, =0xe58d901c-1//str r9, [sp, #28]
+add r3, r3, #1
+str r2, [r0, #0]
+str r3, [r0, #4]
+bl menustub_locatecode
+mov r7, r0
 
 @ Copy the menuropbin data from VRAM to the homemenu linearmem, via the GPU.
 ldr r0, =0x1f500000 @ src
@@ -1202,8 +1214,7 @@ str r3, [sp, #0x4]
 str r3, [sp, #0x8]
 mov r3, #0x8
 str r3, [sp, #0xc]
-ldr r7, =0x14b9cc//gxcmd4
-blx r7
+blx r7//gxcmd4
 
 ldr r0, =1000000000 @ Wait for the above copy to finish.
 mov r1, #0
@@ -1244,15 +1255,12 @@ cmp r2, r0
 bne menustub_amsysinitlocate_l1
 sub r1, r1, #4
 
-ldr r3, =0xe92d4010//push {r4, lr}
-menustub_amsysinitlocate_l2:
-ldr r2, [r1]
-sub r1, r1, #4
-cmp r2, r3
-bne menustub_amsysinitlocate_l2
-add r3, r1, #4
+mov r2, r1
+mov r0, #0
+ldr r1, =0xe92d4010//push {r4, lr}
+bl menustub_locatecode
 
-blx r3//amsys_initialize
+blx r0//amsys_initialize
 
 @ No need to initialize the "ir:rst" handle since that's left at value 0x0 when homemenu is properly running on Old3DS anyway.
 
@@ -1347,6 +1355,10 @@ b .
 @ This returns the address of the located function in r0, and the address of the first word in the input buffer for the function in .text.
 menustub_locatecode:
 push {r4, r5, lr}
+mov r4, r2
+mov r5, #0
+cmp r0, #0
+beq menustub_locatecode_l1
 ldr r4, =0x00100000
 
 menustub_locatecode_l0:
@@ -1395,7 +1407,7 @@ menustub_apts_servicestr:
 .string "APT:S"
 .align 2
 
-.space (menustub_start + 0x1c0) - .
+.space (menustub_start + 0x320) - .
 menustub_end:
 .word 0
 
