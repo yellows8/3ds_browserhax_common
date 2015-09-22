@@ -1220,45 +1220,19 @@ ldr r0, =1000000000 @ Wait for the above copy to finish.
 mov r1, #0
 blx menustub_svcSleepThread
 
-ldr r0, =(~0x733a6d61) @ Locate the "am:sys" string in the homemenu .(ro)data.
+@ Auto-locate the amsys_initialize function.
+ldr r0, =(~0x733a6d61)
 ldr r1, =(~0x7379)
 mvn r0, r0
 mvn r1, r1
 str r0, [sp, #0x24]
 str r1, [sp, #0x28]
 
-ldr r0, =0x00100000
-add r4, sp, #0x24
-mov r1, #0
-menustub_amsysinitlocate_l0:
-ldrb r2, [r0, r1]
-ldrb r3, [r4, r1]
-cmp r2, r3
-bne menustub_amsysinitlocate_l0_lpnext
-add r1, r1, #1
-cmp r1, #7
-bge menustub_amsysinitlocate_l0_lpfinish
-b menustub_amsysinitlocate_l0
-
-menustub_amsysinitlocate_l0_lpnext:
-mov r1, #0
-add r0, r0, #1
-b menustub_amsysinitlocate_l0
-
-menustub_amsysinitlocate_l0_lpfinish: @ At this point r0 is the address of the "am:sys" string mentioned above.
-
-ldr r1, =0x00100000 @ Locate the .pool of the amsys_initialize function.
-menustub_amsysinitlocate_l1:
-ldr r2, [r1]
-add r1, r1, #4
-cmp r2, r0
-bne menustub_amsysinitlocate_l1
-sub r1, r1, #4
-
-mov r2, r1
-mov r0, #0
-ldr r1, =0xe92d4010//push {r4, lr}
-bl menustub_locatecode
+add r0, sp, #0x24
+mov r1, #7
+ldr r2, =0xe92d4010-1
+add r2, r2, #1
+bl menustub_locateservinitcode
 
 blx r0//amsys_initialize
 
@@ -1383,6 +1357,48 @@ add r0, r4, #4
 
 mov r1, r5
 pop {r4, r5, pc}
+.pool
+
+menustub_locateservinitcode: @ r0 = servicenamestr*, r1 = stringlen including null-terminator, r2 = r1 value to pass to menustub_locatecode().
+push {r4, r5, r6, lr}
+mov r4, r0
+mov r5, r1
+mov r6, r2
+
+@ Locate the specified string in the homemenu .(ro)data.
+
+ldr r0, =0x00100000
+mov r1, #0
+menustub_locateservinitcode_l0:
+ldrb r2, [r0, r1]
+ldrb r3, [r4, r1]
+cmp r2, r3
+bne menustub_locateservinitcode_lpnext
+add r1, r1, #1
+cmp r1, r5
+bge menustub_locateservinitcode_lpfinish
+b menustub_locateservinitcode_l0
+
+menustub_locateservinitcode_lpnext:
+mov r1, #0
+add r0, r0, #1
+b menustub_locateservinitcode_l0
+
+menustub_locateservinitcode_lpfinish: @ At this point r0 is the address of the string mentioned above.
+
+ldr r1, =0x00100000 @ Locate the .pool of the target function.
+menustub_locateservinitcode_l1:
+ldr r2, [r1]
+add r1, r1, #4
+cmp r2, r0
+bne menustub_locateservinitcode_l1
+sub r1, r1, #4
+
+mov r2, r1
+mov r0, #0
+mov r1, r6
+bl menustub_locatecode
+pop {r4, r5, r6, pc}
 .pool
 
 .arm
