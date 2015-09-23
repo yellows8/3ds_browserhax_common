@@ -1273,6 +1273,189 @@ add sp, sp, #16
 pop {r4, r5, pc}
 .pool
 
+@ Most of the HTTPC code here is from smashbroshax.
+HTTPC_sendcmd:
+push {r0, r1, r2, r3, r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, [sp, #12]
+str r1, [r4, #0]
+ldr r1, [sp, #4]
+str r1, [r4, #4]
+ldr r1, [sp, #8]
+str r1, [r4, #8]
+
+ldr r0, [sp, #0]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne HTTPC_sendcmd_end
+ldr r0, [r4, #4]
+
+HTTPC_sendcmd_end:
+add sp, sp, #16
+pop {r4, pc}
+.pool
+
+HTTPC_Initialize:
+push {r0, r1, r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, =0x00010044
+str r1, [r4, #0]
+ldr r1, =0x1000
+str r1, [r4, #4]
+mov r1, #0x20
+str r1, [r4, #8]
+mov r1, #0
+str r1, [r4, #16]
+str r1, [r4, #20]
+
+ldr r0, [sp, #0]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne HTTPC_Initialize_end
+ldr r0, [r4, #4]
+
+HTTPC_Initialize_end:
+pop {r1, r2, r4, pc}
+.pool
+
+HTTPC_InitializeConnectionSession:
+mov r2, #0x20
+ldr r3, =0x00080042
+b HTTPC_sendcmd
+.pool
+
+HTTPC_SetProxyDefault:
+ldr r3, =0x000e0040
+b HTTPC_sendcmd
+.pool
+
+HTTPC_CloseContext:
+ldr r3, =0x00030040
+b HTTPC_sendcmd
+.pool
+
+HTTPC_BeginRequest:
+ldr r3, =0x00090040
+b HTTPC_sendcmd
+.pool
+
+HTTPC_CreateContext: @ r0=handle*, r1=ctxhandle*, r2=urlbuf*, r3=urlbufsize
+push {r0, r1, r2, r3, r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, =0x00020082
+str r1, [r4, #0]
+ldr r1, [sp, #12]
+str r1, [r4, #4]
+lsl r1, r1, #4
+mov r2, #0xa
+orr r1, r1, r2
+str r1, [r4, #12]
+ldr r2, [sp, #8]
+str r2, [r4, #16]
+mov r3, #1
+str r3, [r4, #8]
+
+ldr r0, [sp, #0]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne HTTPC_CreateContext_end
+ldr r0, [r4, #4]
+cmp r0, #0
+bne HTTPC_CreateContext_end
+ldr r2, [sp, #4]
+ldr r1, [r4, #8]
+str r1, [r2]
+
+HTTPC_CreateContext_end:
+add sp, sp, #16
+pop {r4, pc}
+.pool
+
+HTTPC_ReceiveData: @ r0=handle*, r1=ctxhandle, r2=buf*, r3=bufsize
+push {r0, r1, r2, r3, r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, =0x000B0082
+str r1, [r4, #0]
+ldr r1, [sp, #4]
+str r1, [r4, #4]
+ldr r1, [sp, #12]
+str r1, [r4, #8]
+lsl r1, r1, #4
+mov r2, #0xc
+orr r1, r1, r2
+str r1, [r4, #12]
+ldr r2, [sp, #8]
+str r2, [r4, #16]
+
+ldr r0, [sp, #0]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne HTTPC_ReceiveData_end
+ldr r0, [r4, #4]
+
+HTTPC_ReceiveData_end:
+add sp, sp, #16
+pop {r4, pc}
+.pool
+
+HTTPC_GetResponseHeader: @ r0=handle*, r1=ctxhandle, r2=headername*, r3=headernamesize, sp0=outvaluebuf*, sp4=outmaxsize, sp8=u32* actual value stringlen.
+push {r0, r1, r2, r3, r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, =0x001E00C4
+str r1, [r4, #0]
+ldr r1, [sp, #4]
+str r1, [r4, #4]
+ldr r1, [sp, #12]
+str r1, [r4, #8]
+ldr r1, [sp, #28]
+str r1, [r4, #12]
+ldr r1, [sp, #12]
+lsl r1, r1, #14
+ldr r2, =0xc02
+orr r1, r1, r2
+str r1, [r4, #16]
+ldr r2, [sp, #8]
+str r2, [r4, #20]
+
+ldr r1, [sp, #28]
+lsl r1, r1, #4
+mov r2, #0xc
+orr r1, r1, r2
+str r1, [r4, #24]
+ldr r2, [sp, #24]
+str r2, [r4, #28]
+
+ldr r0, [sp, #0]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne HTTPC_GetResponseHeader_end
+ldr r0, [r4, #4]
+ldr r2, [sp, #32]
+cmp r2, #0
+beq HTTPC_GetResponseHeader_end
+ldr r3, [r4, #8]
+str r3, [r2]
+
+HTTPC_GetResponseHeader_end:
+add sp, sp, #16
+pop {r4, pc}
+.pool
+
 load_romfs: @ r0 = programID-low, r1 = programID-high, r2 = mediatype, r3 = ncch contentindex, sp0 = ptr where the address of the allocated romfs buffer will be written, sp4 = u32* where the romfs size will be written.
 push {r4, r5, r6, lr}
 sub sp, sp, #0x64
@@ -1631,6 +1814,124 @@ add sp, sp, #4
 pop {r4, r5, r6, pc}
 .pool
 
+http_do_request: @ r0 = output, r1 = url, r2 = flag.
+push {r4, r5, r6, lr}
+sub sp, sp, #0x58
+mov r5, r0
+
+str r1, [sp, #0x50]
+str r2, [sp, #0x54]
+
+add r0, sp, #24
+mov r3, #0
+str r3, [r0]
+add r1, sp, #8
+ldr r3, =0x70747468
+str r3, [r1, #0]
+ldr r3, =0x433a
+str r3, [r1, #4]
+mov r2, #6
+mov r3, #0
+ldr r4, [r7, #0x18]
+blx r4 @ srv_GetServiceHandle
+cmp r0, #0
+bne http_do_request_end
+
+add r0, sp, #16
+mov r3, #0
+str r3, [r0]
+add r1, sp, #8
+mov r2, #6
+mov r3, #0
+ldr r4, [r7, #0x18]
+blx r4 @ srv_GetServiceHandle
+cmp r0, #0
+bne http_do_request_exit0
+
+mov r4, #0
+
+add r0, sp, #24
+bl HTTPC_Initialize
+cmp r0, #0
+bne http_do_request_exit0
+
+ldr r2, [sp, #0x50] @ url
+mov r3, #0
+
+http_do_request_strlen: @ Get strlen for the url.
+ldrb r0, [r2, r3]
+add r3, r3, #1
+cmp r0, #0
+bne http_do_request_strlen
+sub r3, r3, #1
+
+add r0, sp, #24
+add r1, sp, #20
+bl HTTPC_CreateContext
+cmp r0, #0
+bne http_do_request_exit0
+
+add r0, sp, #16
+ldr r1, [sp, #20]
+bl HTTPC_InitializeConnectionSession
+cmp r0, #0
+bne http_do_request_close
+
+add r0, sp, #16
+ldr r1, [sp, #20]
+bl HTTPC_BeginRequest
+cmp r0, #0
+bne http_do_request_close
+
+ldr r0, [sp, #0x54]
+cmp r0, #0
+bne http_do_request_recvdata
+
+str r5, [sp, #0]
+mov r3, #0x80
+str r3, [sp, #4]
+mov r3, #0
+str r3, [sp, #8]
+blx getaddr_httphdr_locationstr
+mov r2, r0
+mov r3, #9
+add r0, sp, #16
+ldr r1, [sp, #20]
+bl HTTPC_GetResponseHeader @ r0=handle*, r1=ctxhandle, r2=headername*, r3=headernamesize, sp0=outvaluebuf*, sp4=outmaxsize, sp8=u32* actual value stringlen.
+b http_do_request_close
+
+http_do_request_recvdata:
+add r0, sp, #16
+ldr r1, [sp, #20]
+mov r2, r5
+ldr r3, =0xa000
+bl HTTPC_ReceiveData
+
+http_do_request_close:
+mov r5, r0
+add r0, sp, #16
+ldr r1, [sp, #20]
+bl HTTPC_CloseContext
+cmp r0, #0
+bne http_do_request_end
+mov r0, r5
+
+http_do_request_exit0:
+mov r5, r0
+ldr r0, [sp, #24]
+blx svcCloseHandle
+
+http_do_request_exit1:
+ldr r0, [sp, #16]
+blx svcCloseHandle
+
+mov r0, r5
+
+http_do_request_end:
+add sp, sp, #0x58
+pop {r4, r5, r6, pc}
+.pool
+
 http_download_payload: @ r0 = payloadbuf, r1 = new3ds_flag
 push {r4, r5, r6, lr}
 sub sp, sp, #0xd0
@@ -1641,99 +1942,22 @@ bl load_systemversion
 cmp r0, #0
 bne http_download_payload_end
 
-ldr r0, =0x99887744 @ HTTP download is currently broken: curl_easy_perform never returns, and there's no network traffic resulting from this either(presumably caused by this loader binary being located near the start of oss.cro, which overwrites libcurl code). Therefore, just return an error which later triggers a crash.
-b http_download_payload_end
-
-ldr r0, =(0x10000000-4)
-mov r1, #0
-str r1, [r0]
-
-add r0, sp, #0x10
-mov r1, r0
-add r0, r0, #0x40
+@ Get the actual payload URL via the Location header with the initial HTTP request.
+add r0, sp, #0x50
+add r1, sp, #0x50
 mov r2, #0
-http_download_payload_clrstate:
-str r2, [r0]
-add r0, r0, #4
-cmp r0, r1
-bcc http_download_payload_clrstate
+bl http_do_request @ r0 = output, r1 = url, r2 = flag.
+cmp r0, #0
+bne http_download_payload_end
 
-add r0, sp, #0x10
-ldr r4, [r7, #0x70]
-blx r4//curl_easy_init
-
-add r0, sp, #0x10
-ldr r1, =(10000 + 1)//CURLOPT_WRITEDATA
-mov r2, r5 @ userdata
-ldr r4, [r7, #0x78]
-blx r4//curl_easy_setopt
-
-add r0, sp, #0x10
-ldr r1, =(20000 + 11)//CURLOPT_WRITEFUNCTION
-adr r2, curlwritecb @ funcptr
-mov r3, #1
-orr r2, r2, r3
-ldr r4, [r7, #0x78]
-blx r4//curl_easy_setopt
-
-add r0, sp, #0x10
-ldr r1, =(20000 + 11) @ CURLOPT_URL
-add r2, sp, #0x50
-ldr r4, [r7, #0x78]
-blx r4//curl_easy_setopt
-
-add r0, sp, #0x10
-ldr r4, [r7, #0x74]
-blx r4//curl_easy_perform
-mov r5, r0
-
-add r0, sp, #0x10
-ldr r4, [r7, #0x6c]
-blx r4//ROP_curl_easy_cleanup
-
+@ Actual payload download.
 mov r0, r5
+add r1, sp, #0x50
+mov r2, #1
+bl http_do_request
+
 http_download_payload_end:
 add sp, sp, #0xd0
-pop {r4, r5, r6, pc}
-.pool
-
-curlwritecb: @ write_callback(char *ptr, size_t size, size_t nmemb, void *userdata); (r0 = ptr, r1 = size, r2 = nmemb, r3 = userdata)
-push {r4, r5, r6, lr}
-sub sp, sp, #4
-mul r1, r1, r2
-mov r2, #0
-str r2, [sp, #0]
-
-ldr r4, =(0x10000000-4)
-ldr r5, [r4]
-ldr r6, =0xa000
-cmp r5, r6
-bge curlwritecb_end
-
-add r3, r3, r5
-add r5, r5, r1
-cmp r5, r6
-blt curlwritecb_cpylp_init
-sub r1, r6, r5
-mov r5, r6
-
-curlwritecb_cpylp_init:
-str r5, [r4]
-
-str r1, [sp, #0]
-
-curlwritecb_cpylp:
-ldrb r2, [r0]
-strb r2, [r3]
-add r0, r0, #1
-add r3, r3, #1
-sub r1, r1, #1
-cmp r1, #0
-bgt curlwritecb_cpylp
-
-curlwritecb_end:
-ldr r0, [sp, #0]
-add sp, sp, #4
 pop {r4, r5, r6, pc}
 .pool
 
@@ -1885,6 +2109,10 @@ getaddr_payloadurl_formatstr:
 adr r0, payloadurl_formatstr
 bx lr
 
+getaddr_httphdr_locationstr:
+adr r0, httphdr_locationstr
+bx lr
+
 sdpayload_path:
 .string16 "sdmc:/browserhax_hblauncher_payload.bin"
 
@@ -1924,6 +2152,11 @@ regionids_array:
 
 payloadurl_formatstr:
 .string "http://smea.mtheall.com/get_payload.php?version=%s-%d-%d-%d-%d-%s" //Sample URL: http://smea.mtheall.com/get_payload.php?version=NEW-10-1-0-27-JPN
+payloadurl_formatstr_end:
+.align 2
+
+httphdr_locationstr:
+.string "Location"
 .align 2
 
 getaddrs_menustub:
