@@ -46,10 +46,24 @@ Values for $arm11code_loadfromsd:
 * 1: The arm11code payload is loaded from SD via this filepath: "sdmc:/arm11code.bin".
 * 2: The arm11code payload is downloaded by requesting a binary with http, see the above example config and ropgen_httpdownload_binary() in 3dsbrowserhax_common.php. The binary is downloaded to SD, once it's finished with that the file has all-zeros written to it, then it attempts to delete the file(which doesn't actually delete the file, unknown why).
 
+# Browserhax usage info
+How each exploit is triggered depends on the exploit, see the documentation for the seperate exploit for that. As said below, just triggering the exploit successfully is all that's really needed besides SD "/boot.3dsx".
+
+3DS Webkit exploits can be quite unstable. When a webkit exploit is *very* unstable, formatting the browser savedata is recommended if you haven't done so before with the current exploit.
+
+You can have the browser auto-load the exploit page if you return to Home Menu from that page. For exploits which automatically trigger, you may have to disable wifi/etc before attempting to load the page in order to return to Home Menu successfully before the exploit actually triggers.
+
 # Homebrew Launcher
 This codebase is mainly intended for loading an arbitrary arm11code payload, at a vaddr which varies per title/version. Homebrew-launcher can be booted via this arm11code payload, with the loader included with this repo. The spider version of this loader automatically locates the required addresses and such on-the-fly. The New3DS web-browser is supported by this too, without anything that's system-version/region specific(besides the data loaded from the payload). The loader determines whether it's running under spider or SKATER by checking the New3DS flag loaded via NS(command 0x01020000 http://3dbrew.org/wiki/NS_and_APT_Services). Therefore, do not use this payload on Old3DS outside of spider, and on New3DS do not use this loader outside of SKATER.
+
+In some kinda rare(?) cases on Old3DS, a crash/"hang" may occur with a gray or white bottom-screen. If it ever returns to Home Menu when the bottom-screen was gray, then a reboot is *required*.
 
 This loader will initially try to load the hblauncher otherapp payload from SD-card "/browserhax_hblauncher_payload.bin". That payload can be downloaded from here: https://smealum.github.io/3ds/  
 If loading from SD fails, this loader will then automatically detect the required payload, then download it with HTTP. This latter method is highly recommended(unless this method doesn't work well for the user): with a "/boot.3dsx" on SD card, there's zero other setup/user-input needed once the browserhax is triggered successfully.  
 When loading the payload with both of the above methods fails, a crash will be triggered.
+
+The loader for Old3DS runs actual native code under the context of Home Menu, if you really want to run your own code under Home Menu you can modify that code in the loader. This code runs very early in the Home Menu process boot.
+
+# Credits
+* megazig for helping with APT(for APT stuff once the Home Menu code in the loader starts running) during the initial + eventually successful Old3DS Home Menu takeover implementation.
 
