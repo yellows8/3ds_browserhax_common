@@ -72,6 +72,12 @@ mov r5, r1
 
 mov r0, r5
 bl loadsd_payload
+cmp r0, #0
+beq _start_loadsd_success
+ldrb r0, [sp, #16]
+bl http_download_payload
+
+_start_loadsd_success:
 ldr r3, =0x80808080
 blx checkerror_triggercrash @ Trigger crash on payload loading fail.
 
@@ -310,14 +316,14 @@ b .
 
 .type freemem, %function
 freemem: @ r0 = addr, r1 = size
-push {lr}
+push {r4, lr}
 mov r3, r1 @ size
 mov r1, r0 @ addr
 mov r0, #1 @ operation
 mov r4, #0 @ permissions
 mov r2, #0 @ addr1
 blx svcControlMemory
-pop {pc}
+pop {r4, pc}
 
 .type gxcmd4, %function
 gxcmd4: @ r0 = src, r1 = dst, r2 = size
@@ -1098,6 +1104,512 @@ add sp, sp, #16
 pop {r4, r5, r6, pc}
 .pool
 
+fsuser_initialize:
+push {r0, r1, r2, r3, r4, r5, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r0, [sp, #0]
+
+ldr r5, =0x08010002
+str r5, [r4, #0]
+mov r1, #0x20
+str r1, [r4, #4]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne fsuser_initialize_end
+ldr r0, [r4, #4]
+
+fsuser_initialize_end:
+add sp, sp, #16
+pop {r4, r5, pc}
+.pool
+
+fsuser_openfiledirectly: @ r0=fsuser* handle, r1=archiveid, r2=archive lowpath type, r3=archive lowpath bufptr, sp0=archive lowpath bufsize, sp4=file lowpath type, sp8=file lowpath bufptr*, sp12=file lowpath bufsize, sp16=openflags, sp20=file out handle*
+push {r0, r1, r2, r3, r4, r5, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r0, [sp, #0]
+ldr r1, [sp, #4]
+ldr r2, [sp, #8]
+
+ldr r5, =0x08030204
+str r5, [r4, #0]
+mov r5, #0
+str r5, [r4, #4] @ transaction
+str r1, [r4, #8] @ archiveid
+str r2, [r4, #12] @ Archive LowPath.Type
+ldr r2, [sp, #28]
+str r2, [r4, #16] @ Archive LowPath.Size
+ldr r2, [sp, #32]
+str r2, [r4, #20] @ File LowPath.Type
+ldr r3, [sp, #40]
+str r3, [r4, #24] @ File LowPath.Size
+ldr r5, [sp, #44]
+str r5, [r4, #28] @ Openflags
+mov r5, #0
+str r5, [r4, #32] @ Attributes
+ldr r3, [sp, #28]
+ldr r5, =0x802
+lsl r3, r3, #14
+orr r3, r3, r5
+str r3, [r4, #36] @ archive lowpath translate hdr/ptr
+ldr r5, [sp, #12]
+str r5, [r4, #40]
+ldr r3, [sp, #40]
+mov r5, #2
+lsl r3, r3, #14
+orr r3, r3, r5
+str r3, [r4, #44] @ file lowpath translate hdr/ptr
+ldr r2, [sp, #36]
+str r2, [r4, #48]
+
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne fsuser_openfiledirectly_end
+
+ldr r0, [r4, #4]
+ldr r2, [sp, #48]
+ldr r1, [r4, #12]
+cmp r0, #0
+bne fsuser_openfiledirectly_end
+str r1, [r2]
+
+fsuser_openfiledirectly_end:
+add sp, sp, #16
+pop {r4, r5, pc}
+.pool
+
+fsfile_read: @ r0=filehandle*, r1=u32 filepos, r2=buf*, r3=size, sp0=u32* total transfersize
+push {r0, r1, r2, r3, r4, r5, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r0, [sp, #0]
+ldr r1, [sp, #4]
+ldr r2, [sp, #8]
+ldr r3, [sp, #12]
+
+ldr r5, =0x080200C2
+str r5, [r4, #0]
+str r1, [r4, #4] @ filepos
+mov r1, #0
+str r1, [r4, #8]
+str r3, [r4, #12] @ Size
+mov r5, #12
+lsl r3, r3, #4
+orr r3, r3, r5
+str r3, [r4, #16] @ buf lowpath translate hdr/ptr
+str r2, [r4, #20]
+
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne fsfile_read_end
+ldr r0, [r4, #4]
+ldr r2, [sp, #28]
+ldr r1, [r4, #8]
+cmp r0, #0
+bne fsfile_read_end
+str r1, [r2]
+
+fsfile_read_end:
+add sp, sp, #16
+pop {r4, r5, pc}
+.pool
+
+fsfile_getsize: @ r0=filehandle*, r1=u64* outsize
+push {r0, r1, r2, r3, r4, r5, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r0, [sp, #0]
+
+ldr r5, =0x08040000
+str r5, [r4, #0]
+
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne fsfile_getsize_end
+ldr r0, [r4, #4]
+ldr r1, [sp, #4]
+cmp r0, #0
+bne fsfile_getsize_end
+cmp r1, #0
+beq fsfile_getsize_end
+ldr r2, [r4, #8]
+ldr r3, [r4, #12]
+str r2, [r1, #0]
+str r3, [r1, #4]
+
+fsfile_getsize_end:
+add sp, sp, #16
+pop {r4, r5, pc}
+.pool
+
+fsfile_close: @ r0=filehandle*
+push {r0, r1, r2, r3, r4, r5, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r0, [sp, #0]
+
+ldr r5, =0x08080000
+str r5, [r4, #0]
+
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne fsfile_close_end
+ldr r0, [r4, #4]
+
+fsfile_close_end:
+add sp, sp, #16
+pop {r4, r5, pc}
+.pool
+
+load_romfs: @ r0 = programID-low, r1 = programID-high, r2 = mediatype, r3 = ncch contentindex, sp0 = ptr where the address of the allocated romfs buffer will be written, sp4 = u32* where the romfs size will be written.
+push {r4, r5, r6, lr}
+sub sp, sp, #0x64
+
+add r4, sp, #0x2c @ Setup the archive lowpath
+str r0, [r4, #0]
+str r1, [r4, #4]
+str r2, [r4, #8]
+mov r0, #0
+str r0, [r4, #0xc]
+
+add r4, sp, #0x3c @ Setup the file lowpath.
+mov r0, #0
+mov r1, r0
+load_romfs_clrfilelowpath:
+str r1, [r4, r0]
+add r0, r0, #4
+cmp r0, #0x14
+blt load_romfs_clrfilelowpath
+
+str r3, [r4, #0x4]
+
+mov r1, #0
+str r1, [sp, #0x60]
+
+ldr r0, =0x553a7366
+str r0, [sp, #0x20]
+ldr r0, =0x524553
+str r0, [sp, #0x24]
+
+add r0, sp, #0x18 @ Get fs:USER handle, @ sp+0x18.
+add r1, sp, #0x20
+mov r2, #7
+mov r3, #0
+ldr r4, [r7, #0x18]
+blx r4 @ srv_GetServiceHandle
+mov r4, r0
+cmp r4, #0
+bne load_romfs_end
+
+add r0, sp, #0x18
+bl fsuser_initialize
+mov r4, r0
+cmp r4, #0
+bne load_romfs_finish
+
+mov r0, #0x10
+str r0, [sp, #0] @ archive lowpath bufsize
+mov r0, #0x2
+str r0, [sp, #4] @ file lowpath type
+add r0, sp, #0x3c
+str r0, [sp, #8] @ file lowpath bufptr*
+mov r0, #0x14
+str r0, [sp, #12] @ file lowpath bufsize
+mov r0, #0x1
+str r0, [sp, #16] @ openflags
+add r0, sp, #0x50
+str r0, [sp, #20] @ file out handle*
+add r0, sp, #0x18 @ fsuser* handle
+ldr r1, =0x2345678A @ archiveid
+mov r2, #0x2 @ archive lowpath type
+add r3, sp, #0x2c @ archive lowpath bufptr
+bl fsuser_openfiledirectly
+mov r4, r0
+cmp r4, #0
+bne load_romfs_finish
+
+add r0, sp, #0x50
+add r1, sp, #0x54
+bl fsfile_getsize
+mov r4, r0
+cmp r4, #0
+bne load_romfs_finishfile
+
+ldr r2, =0xfff
+ldr r3, [sp, #0x54] @ size
+add r3, r3, r2
+bic r3, r3, r2
+mov r1, #0 @ addr
+ldr r0, =0x10003 @ operation
+mov r4, #3 @ permissions
+mov r2, #0 @ addr1
+blx svcControlMemory
+mov r4, r0
+cmp r4, #0
+bne load_romfs_finishfile
+str r1, [sp, #0x60]
+
+mov r2, r1 @ buf*
+add r0, sp, #0x5c
+str r0, [sp, #0] @ u32* total transfersize
+add r0, sp, #0x50 @ filehandle*
+mov r1, #0 @ filepos
+ldr r3, [sp, #0x54] @ size
+bl fsfile_read
+mov r4, r0
+cmp r4, #0
+bne load_romfs_finishfile
+
+ldr r2, [sp, #0x54] @ Validate that the read-size matches the specified size.
+ldr r3, [sp, #0x5c]
+cmp r2, r3
+beq load_romfs_finishfile
+mov r4, #0
+mvn r4, r4
+
+load_romfs_finishfile:
+add r0, sp, #0x50
+bl fsfile_close
+
+ldr r0, [sp, #0x50]
+blx svcCloseHandle
+
+load_romfs_finish:
+ldr r0, [sp, #0x18]
+blx svcCloseHandle
+
+cmp r4, #0
+bne load_romfs_end
+
+ldr r1, [sp, #0x60]
+ldr r2, [sp, #0x74]
+str r1, [r2] @ Write the bufptr to the output.
+ldr r3, [sp, #0x54]
+ldr r2, [sp, #0x78]
+str r3, [r2] @ Write the size to the output.
+
+load_romfs_end:
+cmp r4, #0
+beq load_romfs_exit
+
+ldr r0, [sp, #0x60]
+ldr r1, [sp, #0x54]
+
+ldr r2, =0xfff
+add r1, r1, r2
+bic r1, r1, r2
+bl freemem
+
+load_romfs_exit:
+mov r0, r4
+add sp, sp, #0x64
+pop {r4, r5, r6, pc}
+.pool
+
+read_romfs_file: @ r0 = programID-low, r1 = programID-high, r2 = mediatype, r3 = ncch contentindex, sp0 = utf16 filename, sp4 = filename char len, sp8 = outbuf*, sp12 = exact_size.
+push {r4, r5, r6, lr}
+sub sp, sp, #0x14
+
+add r4, sp, #0x8
+str r4, [sp, #0x0]
+add r4, sp, #0xc
+str r4, [sp, #0x4]
+bl load_romfs
+str r0, [sp, #0x10]
+cmp r0, #0
+bne read_romfs_file_end
+
+ldr r0, [sp, #0x8]
+ldr r1, [sp, #0xc]
+
+mov r2, #1
+mvn r2, r2
+str r2, [sp, #0x10]
+ldr r2, [r0, #0x1c] @ "File Metadata Table Offset"
+cmp r2, r1
+bcs read_romfs_file_end @ The above offset must be <imagesize.
+ldr r3, [r0, #0x20] @ "File Metadata Table Size"
+cmp r3, r1
+bhi read_romfs_file_end @ The above size must be <=imagesize.
+add r3, r3, r2
+cmp r3, r1
+bhi read_romfs_file_end @ The above offset+size must be <=imagesize.
+cmp r2, r3
+bcs read_romfs_file_end @ Check for integer overflow.
+ldr r3, [r0, #0x20]
+add r2, r2, r0
+mov r4, r2
+
+read_romfs_file_entfile_lp:
+ldr r5, [r4, #0x1c]
+ldr r6, [sp, #0x28]
+cmp r5, r6
+bne read_romfs_file_entfile_lpnext
+
+mov r0, r4
+add r0, r0, #0x20
+ldr r1, [sp, #0x24]
+mov r3, #0
+
+read_romfs_file_entfile_lp_filenamelp:
+ldrh r5, [r0, r3]
+ldrh r6, [r1, r3]
+cmp r5, r6
+bne read_romfs_file_entfile_lpnext
+add r3, r3, #0x2
+ldr r5, [sp, #0x28]
+cmp r3, r5
+bne read_romfs_file_entfile_lp_filenamelp
+b read_romfs_file_entfile_lpfinish
+
+read_romfs_file_entfile_lpnext:
+ldr r5, [r4, #0x4]
+mov r6, #0
+mvn r6, r6
+cmp r5, r6
+beq read_romfs_file_entfile_lpend
+ldr r0, [sp, #0x8]
+ldr r3, [r0, #0x20]
+cmp r5, r3
+bcs read_romfs_file_entfile_lpend
+mov r4, r2
+add r4, r4, r5
+b read_romfs_file_entfile_lp
+
+read_romfs_file_entfile_lpend:
+mov r2, #2
+mvn r2, r2
+str r2, [sp, #0x10]
+b read_romfs_file_exit
+
+read_romfs_file_entfile_lpfinish:
+ldr r0, [sp, #0x8]
+ldr r1, [sp, #0xc]
+
+ldr r2, [r0, #0x24] @ "File Data Offset"
+
+mov r6, #3
+mvn r6, r6
+str r6, [sp, #0x10]
+ldr r0, [r4, #0x8]
+add r0, r0, r2
+cmp r0, r1
+bhi read_romfs_file_exit @ fileoffset+filedatastart must be <=imagesize.
+cmp r2, r0
+bhi read_romfs_file_exit @ Check for integer overflow.
+
+ldr r1, [r4, #0x10]
+
+mov r3, #4
+mvn r3, r3
+str r3, [sp, #0x10]
+ldr r3, [sp, #0x30] @ Filesize must match the input size.
+cmp r1, r3
+bne read_romfs_file_exit
+
+ldr r1, [sp, #0x8]
+add r0, r0, r1 @ r0 = src data in romfs image.
+ldr r1, [sp, #0x2c] @ r1 = dst buf
+mov r2, #0
+
+read_romfs_file_datacpy:
+ldrb r4, [r0, r2]
+strb r4, [r1, r2]
+add r2, r2, #1
+cmp r2, r3
+blt read_romfs_file_datacpy
+
+mov r0, #0
+str r0, [sp, #0x10]
+
+read_romfs_file_exit:
+ldr r0, [sp, #0x8]
+ldr r1, [sp, #0xc]
+ldr r2, =0xfff
+add r1, r1, r2
+bic r1, r1, r2
+bl freemem
+
+read_romfs_file_end:
+ldr r0, [sp, #0x10]
+add sp, sp, #0x14
+pop {r4, r5, r6, pc}
+.pool
+
+load_systemversion: @ r0 = new3ds_flag
+push {r4, r5, r6, lr}
+sub sp, sp, #32
+
+ldr r5, =0x00016302
+mov r1, #29
+lsl r0, r0, r1
+orr r5, r5, r0
+
+@ The TID-lows here are hard-coded for USA atm.
+
+adr r4, versionbin_filename @ Load CVer.
+str r4, [sp, #0x0]
+mov r4, #0x16
+str r4, [sp, #0x4]
+add r4, sp, #0x10
+str r4, [sp, #0x8]
+mov r4, #0x8
+str r4, [sp, #0xc]
+ldr r0, =0x00017302
+ldr r1, =0x000400DB
+mov r2, #0
+mov r3, #0
+bl read_romfs_file
+cmp r0, #0
+bne load_systemversion_exit
+
+ldr r6, =0x11223344
+
+adr r4, versionbin_filename @ Load NVer.
+str r4, [sp, #0x0]
+mov r4, #0x16
+str r4, [sp, #0x4]
+add r4, sp, #0x18
+str r4, [sp, #0x8]
+mov r4, #0x8
+str r4, [sp, #0xc]
+mov r0, r5
+ldr r1, =0x000400DB
+mov r2, #0
+mov r3, #0
+bl read_romfs_file
+cmp r0, #0
+bne load_systemversion_exit
+
+load_systemversion_exit:
+mov r3, #0
+str r3, [r3]
+
+add sp, sp, #32
+pop {r4, r5, r6, pc}
+.pool
+
+http_download_payload: @ r0 = new3ds_flag
+push {r4, r5, r6, lr}
+sub sp, sp, #16
+
+bl load_systemversion
+
+add sp, sp, #16
+pop {r4, r5, r6, pc}
+.pool
+
 .arm
 
 get_cmdbufptr:
@@ -1159,6 +1671,9 @@ sdpayload_path:
 .string16 "sdmc:/browserhax_hblauncher_payload.bin"
 
 .align 2
+
+versionbin_filename:
+.string16 "version.bin"
 
 getaddrs_menustub:
 adr r0, menustub_start
