@@ -62,6 +62,8 @@ This loader will initially try to load the hblauncher otherapp payload from SD-c
 If loading from SD fails, this loader will then automatically detect the required payload, then download it with HTTP. This latter method is highly recommended(unless this method doesn't work well for the user): with a "/boot.3dsx" on SD card, there's zero other setup/user-input needed once the browserhax is triggered successfully.  
 When loading the payload with both of the above methods fails, a crash will be triggered.
 
+The entire time the loader is running, prior to the menurop, the bottom-screen color is set to gray. If it stays like this with top-screen gfx still being updated by the browser for a while, in particular with http-download, you may have to reboot the system due to network issues.
+
 The loader for Old3DS runs actual native code under the context of Home Menu, if you really want to run your own code under Home Menu you can modify that code in the loader. This code runs very early in the Home Menu process boot.
 
 # Credits
