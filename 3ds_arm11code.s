@@ -1549,16 +1549,18 @@ pop {r4, r5, r6, pc}
 
 load_systemversion: @ r0 = new3ds_flag
 push {r4, r5, r6, lr}
-sub sp, sp, #32
+sub sp, sp, #0x2c
 
-ldr r5, =0x00016302
 mov r1, #29
 lsl r0, r0, r1
-orr r5, r5, r0
+mov r5, r0
 
-@ The TID-lows here are hard-coded for USA atm.
+@ Get region-specific info.
+bl getregion
+add r1, sp, #0x20 @ output structure: +0 = NVer tidlow, +4 = CVer tidlow, +8 = regionid string(as a word, not ptr).
+blx getregion_entrydata
 
-adr r4, versionbin_filename @ Load CVer.
+adr r4, versionbin_filename @ Load NVer.
 str r4, [sp, #0x0]
 mov r4, #0x16
 str r4, [sp, #0x4]
@@ -1566,7 +1568,8 @@ add r4, sp, #0x10
 str r4, [sp, #0x8]
 mov r4, #0x8
 str r4, [sp, #0xc]
-ldr r0, =0x00017302
+ldr r0, [sp, #0x20]
+orr r0, r0, r5
 ldr r1, =0x000400DB
 mov r2, #0
 mov r3, #0
@@ -1574,9 +1577,7 @@ bl read_romfs_file
 cmp r0, #0
 bne load_systemversion_exit
 
-ldr r6, =0x11223344
-
-adr r4, versionbin_filename @ Load NVer.
+adr r4, versionbin_filename @ Load CVer.
 str r4, [sp, #0x0]
 mov r4, #0x16
 str r4, [sp, #0x4]
@@ -1584,7 +1585,7 @@ add r4, sp, #0x18
 str r4, [sp, #0x8]
 mov r4, #0x8
 str r4, [sp, #0xc]
-mov r0, r5
+ldr r0, [sp, #0x24]
 ldr r1, =0x000400DB
 mov r2, #0
 mov r3, #0
@@ -1596,7 +1597,7 @@ load_systemversion_exit:
 mov r3, #0
 str r3, [r3]
 
-add sp, sp, #32
+add sp, sp, #0x2c
 pop {r4, r5, r6, pc}
 .pool
 
@@ -1608,6 +1609,76 @@ bl load_systemversion
 
 add sp, sp, #16
 pop {r4, r5, r6, pc}
+.pool
+
+getregion: @ Returns region u8.
+push {lr}
+sub sp, sp, #16
+
+ldr r3, =0x3a676663 @ "cfg:u"
+str r3, [sp, #8]
+mov r3, #0x75
+str r3, [sp, #12]
+
+add r0, sp, #0 @ Out handle
+add r1, sp, #8
+mov r2, #5
+mov r3, #0
+ldr r4, [r7, #0x18]
+blx r4 @ srv_GetServiceHandle
+ldr r3, =0x4e4e4e4e
+blx checkerror_triggercrash
+
+add r0, sp, #0 @ cfg handle
+add r1, sp, #4 @ u8* out
+mov r2, #0
+str r2, [r1]
+bl cfg_getregion
+ldr r3, =0x4f4f4f4f
+blx checkerror_triggercrash
+
+ldr r0, [sp, #0]
+blx svcCloseHandle
+
+mov r3, sp
+ldrb r3, [r3, #4]
+cmp r3, #7
+blt getregion_end
+ldr r3, =0x49494949
+mov r0, #0
+mvn r0, r0
+blx checkerror_triggercrash
+
+getregion_end:
+mov r0, r3
+add sp, sp, #16
+pop {pc}
+.pool
+
+cfg_getregion: @ inr0=cfg handle*, inr1=u8* out
+push {r0, r1, r2, r3, r4, r5, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r0, [sp, #0]
+
+ldr r5, =0x00020000
+str r5, [r4, #0]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne cfg_getregion_end
+ldr r0, [r4, #4]
+cmp r0, #0
+bne cfg_getregion_end
+
+ldr r2, [sp, #4]
+ldrb r1, [r4, #8]
+strb r1, [r2]
+
+cfg_getregion_end:
+add sp, sp, #16
+pop {r4, r5, pc}
 .pool
 
 .arm
@@ -1667,6 +1738,23 @@ getaddr_sdpayload_path:
 adr r0, sdpayload_path
 bx lr
 
+getregion_entrydata: @ r0 = output value from getregion(), r1 = output structure: +0 = NVer tidlow, +4 = CVer tidlow, +8 = regionid string.
+mov r3, #2
+lsl r0, r0, r3
+
+adr r2, NVer_tidlow_regionarray
+ldr r2, [r2, r0]
+str r2, [r1, #0]
+
+adr r2, CVer_tidlow_regionarray
+ldr r2, [r2, r0]
+str r2, [r1, #4]
+
+adr r2, regionids_array
+ldr r2, [r2, r0]
+str r2, [r1, #8]
+bx lr
+
 sdpayload_path:
 .string16 "sdmc:/browserhax_hblauncher_payload.bin"
 
@@ -1674,6 +1762,35 @@ sdpayload_path:
 
 versionbin_filename:
 .string16 "version.bin"
+
+NVer_tidlow_regionarray:
+.word 0x00016202 @ JPN
+.word 0x00016302 @ USA
+.word 0x00016102 @ EUR
+.word 0x00016202 @ "AUS"
+.word 0x00016402 @ CHN
+.word 0x00016502 @ KOR
+.word 0x00016602 @ TWN
+
+CVer_tidlow_regionarray:
+.word 0x00017202 @ JPN
+.word 0x00017302 @ USA
+.word 0x00017102 @ EUR
+.word 0x00017202 @ "AUS"
+.word 0x00017402 @ CHN
+.word 0x00017502 @ KOR
+.word 0x00017602 @ TWN
+
+regionids_array:
+.string "JPN" @ JPN
+.string "USA" @ USA
+.string "EUR" @ EUR
+.string "JPN" @ "AUS"
+.string "CHN" @ CHN
+.string "KOR" @ KOR
+.string "TWN" @ TWN
+
+.align 2
 
 getaddrs_menustub:
 adr r0, menustub_start
