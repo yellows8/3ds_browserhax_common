@@ -1992,7 +1992,7 @@ function generateropchain_type2()
 	$databuf[24] = 0;
 	$databuf[25] = $LINEAR_CODETMPBUF;
 	$databuf[26] = $ROP_snprintf;
-	$databuf[27] = $ROP_curl_easy_cleanup;
+	$databuf[27] = $ROP_curl_easy_cleanup;//Using these libcurl functions from the arm11code payload is not recommended: these are broken due to the payload overwriting oss.cro.
 	$databuf[28] = $ROP_curl_easy_init;
 	$databuf[29] = $ROP_curl_easy_perform;
 	$databuf[30] = $ROP_curl_easy_setopt;
