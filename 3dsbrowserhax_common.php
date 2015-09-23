@@ -26,10 +26,10 @@ if($getbinselect==3)
 $ua = $_SERVER['HTTP_USER_AGENT'];
 if(!strstr($ua, "Mozilla/5.0 (Nintendo 3DS; U; ; ") && !strstr($ua, "Mozilla/5.0 (New Nintendo 3DS"))
 {
-	header("Location: /");
-	//echo "This only supports the Nintendo (New3DS)3DS main web-browser.\n";
+	//header("Location: /");
+	echo "This exploit only supports the Nintendo 3DS main web-browser(s).\n";
 	writeNormalLog("RESULT: 200 INVALID USER-AGENT, REDIRECTING");
-	return;
+	exit;
 }
 
 if(!isset($generatebinrop))$generatebinrop = 0;
