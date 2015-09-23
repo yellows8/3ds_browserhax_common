@@ -57,3 +57,6 @@ echo -n -e "\n"
 getimport webkit.cro __aeabi_memcpy "\$ROP_MEMCPY = \$WEBKITCRO_MAPADR+"
 getimport webkit.cro __aeabi_memclr4 "\$ROP_MEMSETOTHER = \$WEBKITCRO_MAPADR+"
 echo -n -e "\n"
+getimport oss.cro __2snprintf "\$ROP_snprintf = \$OSSCRO_MAPADR+"
+echo -n -e "\n"
+

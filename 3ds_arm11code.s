@@ -74,7 +74,8 @@ mov r0, r5
 bl loadsd_payload
 cmp r0, #0
 beq _start_loadsd_success
-ldrb r0, [sp, #16]
+mov r0, r5
+ldrb r1, [sp, #16]
 bl http_download_payload
 
 _start_loadsd_success:
@@ -1547,15 +1548,22 @@ add sp, sp, #0x14
 pop {r4, r5, r6, pc}
 .pool
 
-load_systemversion: @ r0 = new3ds_flag
-push {r4, r5, r6, lr}
-sub sp, sp, #0x2c
+load_systemversion: @ r0 = outurl*, r1 = new3ds_flag.
+push {r0, r4, r5, r6, lr}
+sub sp, sp, #0x30
 
-mov r1, #29
-lsl r0, r0, r1
-mov r5, r0
+mov r2, #29
+lsl r1, r1, r2
+mov r5, r1
+
+ldr r2, =0x444c4f//"OLD"
+cmp r1, #0
+beq load_systemversion_getregioninfo
+ldr r2, =0x57454e//"NEW"
 
 @ Get region-specific info.
+load_systemversion_getregioninfo:
+str r2, [sp, #0x2c]
 bl getregion
 add r1, sp, #0x20 @ output structure: +0 = NVer tidlow, +4 = CVer tidlow, +8 = regionid string(as a word, not ptr).
 blx getregion_entrydata
@@ -1593,21 +1601,139 @@ bl read_romfs_file
 cmp r0, #0
 bne load_systemversion_exit
 
-load_systemversion_exit:
-mov r3, #0
-str r3, [r3]
+blx getaddr_payloadurl_formatstr
+mov r2, r0
+ldr r0, [sp, #0x30]
+mov r1, #0x80
+sub r1, r1, #0x1
+mov r3, sp
+ldrb r3, [r3, #0x1a]
+str r3, [sp, #0]
+mov r3, sp
+ldrb r3, [r3, #0x19]
+str r3, [sp, #4]
+mov r3, sp
+ldrb r3, [r3, #0x18]
+str r3, [sp, #8]
+mov r3, sp
+ldrb r3, [r3, #0x12]
+str r3, [sp, #12]
+add r3, sp, #0x28
+str r3, [sp, #16]
+add r3, sp, #0x2c
+ldr r4, [r7, #0x68]
+blx r4 @ snprintf, for the URL.
+mov r0, #0
 
-add sp, sp, #0x2c
+load_systemversion_exit:
+add sp, sp, #0x30
+add sp, sp, #4
 pop {r4, r5, r6, pc}
 .pool
 
-http_download_payload: @ r0 = new3ds_flag
+http_download_payload: @ r0 = payloadbuf, r1 = new3ds_flag
 push {r4, r5, r6, lr}
-sub sp, sp, #16
+sub sp, sp, #0xd0
+mov r5, r0
 
+add r0, sp, #0x50
 bl load_systemversion
+cmp r0, #0
+bne http_download_payload_end
 
-add sp, sp, #16
+ldr r0, =0x99887744 @ HTTP download is currently broken: curl_easy_perform never returns, and there's no network traffic resulting from this either(presumably caused by this loader binary being located near the start of oss.cro, which overwrites libcurl code). Therefore, just return an error which later triggers a crash.
+b http_download_payload_end
+
+ldr r0, =(0x10000000-4)
+mov r1, #0
+str r1, [r0]
+
+add r0, sp, #0x10
+mov r1, r0
+add r0, r0, #0x40
+mov r2, #0
+http_download_payload_clrstate:
+str r2, [r0]
+add r0, r0, #4
+cmp r0, r1
+bcc http_download_payload_clrstate
+
+add r0, sp, #0x10
+ldr r4, [r7, #0x70]
+blx r4//curl_easy_init
+
+add r0, sp, #0x10
+ldr r1, =(10000 + 1)//CURLOPT_WRITEDATA
+mov r2, r5 @ userdata
+ldr r4, [r7, #0x78]
+blx r4//curl_easy_setopt
+
+add r0, sp, #0x10
+ldr r1, =(20000 + 11)//CURLOPT_WRITEFUNCTION
+adr r2, curlwritecb @ funcptr
+mov r3, #1
+orr r2, r2, r3
+ldr r4, [r7, #0x78]
+blx r4//curl_easy_setopt
+
+add r0, sp, #0x10
+ldr r1, =(20000 + 11) @ CURLOPT_URL
+add r2, sp, #0x50
+ldr r4, [r7, #0x78]
+blx r4//curl_easy_setopt
+
+add r0, sp, #0x10
+ldr r4, [r7, #0x74]
+blx r4//curl_easy_perform
+mov r5, r0
+
+add r0, sp, #0x10
+ldr r4, [r7, #0x6c]
+blx r4//ROP_curl_easy_cleanup
+
+mov r0, r5
+http_download_payload_end:
+add sp, sp, #0xd0
+pop {r4, r5, r6, pc}
+.pool
+
+curlwritecb: @ write_callback(char *ptr, size_t size, size_t nmemb, void *userdata); (r0 = ptr, r1 = size, r2 = nmemb, r3 = userdata)
+push {r4, r5, r6, lr}
+sub sp, sp, #4
+mul r1, r1, r2
+mov r2, #0
+str r2, [sp, #0]
+
+ldr r4, =(0x10000000-4)
+ldr r5, [r4]
+ldr r6, =0xa000
+cmp r5, r6
+bge curlwritecb_end
+
+add r3, r3, r5
+add r5, r5, r1
+cmp r5, r6
+blt curlwritecb_cpylp_init
+sub r1, r6, r5
+mov r5, r6
+
+curlwritecb_cpylp_init:
+str r5, [r4]
+
+str r1, [sp, #0]
+
+curlwritecb_cpylp:
+ldrb r2, [r0]
+strb r2, [r3]
+add r0, r0, #1
+add r3, r3, #1
+sub r1, r1, #1
+cmp r1, #0
+bgt curlwritecb_cpylp
+
+curlwritecb_end:
+ldr r0, [sp, #0]
+add sp, sp, #4
 pop {r4, r5, r6, pc}
 .pool
 
@@ -1755,6 +1881,10 @@ ldr r2, [r2, r0]
 str r2, [r1, #8]
 bx lr
 
+getaddr_payloadurl_formatstr:
+adr r0, payloadurl_formatstr
+bx lr
+
 sdpayload_path:
 .string16 "sdmc:/browserhax_hblauncher_payload.bin"
 
@@ -1790,6 +1920,10 @@ regionids_array:
 .string "KOR" @ KOR
 .string "TWN" @ TWN
 
+.align 2
+
+payloadurl_formatstr:
+.string "http://smea.mtheall.com/get_payload.php?version=%s-%d-%d-%d-%d-%s" //Sample URL: http://smea.mtheall.com/get_payload.php?version=NEW-10-1-0-27-JPN
 .align 2
 
 getaddrs_menustub:

