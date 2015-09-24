@@ -26,9 +26,8 @@ if($getbinselect==3)
 $ua = $_SERVER['HTTP_USER_AGENT'];
 if(!strstr($ua, "Mozilla/5.0 (Nintendo 3DS; U; ; ") && !strstr($ua, "Mozilla/5.0 (New Nintendo 3DS"))
 {
-	//header("Location: /");
 	echo "This exploit only supports the Nintendo 3DS main web-browser(s).\n";
-	writeNormalLog("RESULT: 200 INVALID USER-AGENT, REDIRECTING");
+	//error_log("3dsbrowserhax_common.php: INVALID USER-AGENT.");
 	exit;
 }
 
@@ -81,15 +80,15 @@ else if(strstr($ua, "1.3.10126"))//1.3.10126 v3077 9.9.0-26
 if($browserver == -1)
 {
 	echo "This browser version is not recognized.\n";
-	writeNormalLog("RESULT: 200 BROWSERVER NOT RECOGNIZED");
-	return;
+	//error_log("3dsbrowserhax_common.php: BROWSERVER NOT RECOGNIZED.");
+	exit;
 }
 
 if(!($browserver>=1 && $browserver<=6) && !(($browserver & 0x80) && ($browserver>=0x80 && $browserver<=0x83)))
 {
 	echo "This browser version is not supported.\n";
-	writeNormalLog("RESULT: 200 BROWSERVER NOT SUPPORTED");
-	return;
+	//error_log("3dsbrowserhax_common.php: BROWSERVER NOT SUPPORTED.");
+	exit;
 }
 
 $DEVUNIT = 0;
