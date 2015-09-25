@@ -1410,6 +1410,47 @@ add sp, sp, #16
 pop {r4, pc}
 .pool
 
+HTTPC_AddRequestHeaderField: @ r0=handle*, r1=ctxhandle, r2=headername*, r3=headernamesize, sp0=valuebuf*, sp4=valuebufsize
+push {r0, r1, r2, r3, r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, =0x001100c4
+str r1, [r4, #0]
+ldr r1, [sp, #4]
+str r1, [r4, #4]
+ldr r1, [sp, #12]
+str r1, [r4, #8]
+ldr r1, [sp, #28]
+str r1, [r4, #12]
+ldr r1, [sp, #12]
+lsl r1, r1, #14
+ldr r2, =0xc02
+orr r1, r1, r2
+str r1, [r4, #16]
+ldr r2, [sp, #8]
+str r2, [r4, #20]
+
+ldr r1, [sp, #28]
+lsl r1, r1, #4
+mov r2, #0xa
+orr r1, r1, r2
+str r1, [r4, #24]
+ldr r2, [sp, #24]
+str r2, [r4, #28]
+
+ldr r0, [sp, #0]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne HTTPC_AddRequestHeaderField_end
+ldr r0, [r4, #4]
+
+HTTPC_AddRequestHeaderField_end:
+add sp, sp, #16
+pop {r4, pc}
+.pool
+
 HTTPC_GetResponseHeader: @ r0=handle*, r1=ctxhandle, r2=headername*, r3=headernamesize, sp0=outvaluebuf*, sp4=outmaxsize, sp8=u32* actual value stringlen.
 push {r0, r1, r2, r3, r4, lr}
 blx get_cmdbufptr
@@ -1877,6 +1918,18 @@ bl HTTPC_InitializeConnectionSession
 cmp r0, #0
 bne http_do_request_close
 
+blx getaddr_httphdrstrs_useragent @ Set the http User-Agent.
+str r2, [sp, #0]
+str r3, [sp, #4]
+mov r2, r0
+mov r3, r1
+
+add r0, sp, #16
+ldr r1, [sp, #20]
+bl HTTPC_AddRequestHeaderField @ r0=handle*, r1=ctxhandle, r2=headername*, r3=headernamesize, sp0=valuebuf*, sp4=valuebufsize
+cmp r0, #0
+bne http_do_request_close
+
 add r0, sp, #16
 ldr r1, [sp, #20]
 bl HTTPC_BeginRequest
@@ -2113,6 +2166,14 @@ getaddr_httphdr_locationstr:
 adr r0, httphdr_locationstr
 bx lr
 
+getaddr_httphdrstrs_useragent:
+adr r0, httphdr_useragentstr
+mov r1, #0xb
+adr r2, httphdr_useragentvaluestr
+mov r3, #0x25
+bx lr
+.pool
+
 sdpayload_path:
 .string16 "sdmc:/browserhax_hblauncher_payload.bin"
 
@@ -2157,6 +2218,14 @@ payloadurl_formatstr_end:
 
 httphdr_locationstr:
 .string "Location"
+.align 2
+
+httphdr_useragentstr:
+.string "User-Agent"
+.align 2
+
+httphdr_useragentvaluestr:
+.string "3dsbrowserhax_hblauncher_loader/v1.0"
 .align 2
 
 getaddrs_menustub:

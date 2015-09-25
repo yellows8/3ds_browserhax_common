@@ -49,7 +49,7 @@ Values for $arm11code_loadfromsd:
 # Browserhax usage info
 How each exploit is triggered depends on the exploit, see the documentation for the seperate exploit for that. As said below, just triggering the exploit successfully is all that's really needed besides SD "/boot.3dsx".
 
-3DS Webkit exploits can be quite unstable. When a webkit exploit is *very* unstable, formatting the browser savedata is recommended if you haven't done so before with the current exploit URL.
+3DS Webkit exploits can be quite unstable. When a webkit exploit is *very* unstable, formatting the browser savedata is recommended if you haven't done so before with the current exploit URL. If you want, from hblauncher-payload booted via browserhax you could install exploit(s) listed here: http://3dbrew.org/wiki/Homebrew_Exploits
 
 You can have the browser auto-load the exploit page if you return to Home Menu from that page. For exploits which automatically trigger, you may have to disable wifi/etc before attempting to load the page in order to return to Home Menu successfully before the exploit actually triggers.
 
