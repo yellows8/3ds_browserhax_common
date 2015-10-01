@@ -138,10 +138,28 @@ ldr r2, =0x10000
 bl gxcmd4
 blx svcSleepThread_1second
 
-ldr r0, =0x1a000 @ Clear the hblauncher parameter block.
+@ Clear the hblauncher parameter block.
+ldr r0, [sp, #44]
+add r0, r0, r5
+
+mov r1, #0
+mov r2, r1
+ldr r3, =0x1800
+
+hblauncher_clear_paramblk:
+str r1, [r0, r2]
+add r2, r2, #4
+cmp r2, r3
+blt hblauncher_clear_paramblk
+
+ldr r1, =0x1800
+ldr r3, [r7, #0x20]
+blx r3
+
+ldr r0, [sp, #44]
 add r0, r0, r5
 ldr r1, =0x38c40000 - 0x800*4
-ldr r2, =0x800
+ldr r2, =0x1800 @ 0x1000 is included for backwards-compatibility.
 bl gxcmd4
 blx svcSleepThread_1second
 b menuropbin_vramcopy_finish
