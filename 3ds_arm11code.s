@@ -2451,7 +2451,7 @@ ldr r0, =0xe8bd4070-1//pop {r4, r5, r6, lr}
 add r0, r0, #1
 str r0, [sp, #4]
 add r0, sp, #0x24
-mov r1, #9
+mov r1, #8
 ldr r2, =0xe92d4070-1//push {r4, r5, r6, lr}
 add r2, r2, #1
 ldr r3, =0x80000004
@@ -2629,7 +2629,7 @@ mov r1, r5
 pop {r4, r5, pc}
 .pool
 
-menustub_locateservinitcode: @ r0 = servicenamestr*, r1 = stringlen including null-terminator, r2 = r1 value to pass to menustub_locatecode(). r3 = <see below when this has bit31 set>. The rest only matter when r3 bit31 is set: sp0 = when a matching value is found in .pool where sp0 is non-zero, subtract the current address by this value and compare with the word loaded from there with the data from sp4. sp4 = see sp0 info.
+menustub_locateservinitcode: @ r0 = servicenamestr*, r1 = compare-byte-len, r2 = r1 value to pass to menustub_locatecode(). r3 = <see below when this has bit31 set>. The rest only matter when r3 bit31 is set: sp0 = when a matching value is found in .pool where sp0 is non-zero, subtract the current address by this value and compare with the word loaded from there with the data from sp4. sp4 = see sp0 info.
 @ When inr3 bit31 is set, this code will then do the following with bit31 cleared: after locating the address of the service-str, it will then search for a ptr for this in memory. Once found, the current address is subtracted by the masked inr3 value, then it will continue to search for the target function's .pool with this new address.
 push {r4, r5, r6, lr}
 sub sp, sp, #4
