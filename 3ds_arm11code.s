@@ -58,48 +58,53 @@ ldr r1, =0x320
 ldr r3, [r7, #0x20]
 blx r3
 
-@ Allocate linearmem for the hblauncher payload. The kernel clears this memory during allocation, therefore the below code will not clear this buffer.
 menustubcpy_end:
-ldr r3, =0x1b000 @ size
-mov r1, #0 @ addr
-ldr r0, =0x10003 @ operation
-mov r4, #3 @ permissions
-mov r2, #0 @ addr1
-blx svcControlMemory
-ldr r3, =0x70707070
-blx checkerror_triggercrash @ Trigger crash on memalloc fail.
-mov r5, r1
-
-mov r0, r5
+add r0, sp, #36
+add r1, sp, #40
 bl loadsd_payload
 cmp r0, #0
 beq _start_loadsd_success
-mov r0, r5
-ldrb r1, [sp, #16]
+add r0, sp, #36
+add r1, sp, #40
+ldrb r2, [sp, #16]
 bl http_download_payload
 
 _start_loadsd_success:
 ldr r3, =0x80808080
 blx checkerror_triggercrash @ Trigger crash on payload loading fail.
 
+ldr r5, [sp, #36]
+ldr r6, [sp, #40]
+
 mov r0, r5 @ payloadbuf
-ldr r1, =0xa000 @ payloadbufsize
+mov r1, r6 @ payloadbufsize
 add r2, sp, #20 @ output
 bl locatepayload_data
 ldr r3, =0x77777778
 blx checkerror_triggercrash
 
+ldr r3, =0xfff
+
+mov r1, r6 @ dst0
+ldr r2, =0x8000
+add r2, r2, r6 @ dst1
+
+add r1, r1, r3
+add r2, r2, r3
+bic r1, r1, r3
+bic r2, r2, r3
+
+str r1, [sp, #44]
+
 ldr r0, [sp, #20] @ Src offset in the payload.
 ldr r6, [sp, #24] @ Size of the menuropbin.
 
-ldr r1, =0xa000 @ dst0
-ldr r2, =(0xa000+0x8000) @ dst1
 add r0, r0, r5
 add r1, r1, r5
 add r2, r2, r5
 mov r3, #0
 
-setup_initial_menuropdata: @ Copy the 0x8000-bytes from src to dst0 and dst1.
+setup_initial_menuropdata: @ Copy the menuropbin from src to dst0 and dst1.
 ldr r4, [r0, r3]
 str r4, [r1, r3]
 str r4, [r2, r3]
@@ -114,7 +119,7 @@ bl patchPayload
 ldr r3, =0xa0a0a0a0
 blx checkerror_triggercrash @ Trigger crash on payload-patching fail.
 
-ldr r0, =0xa000
+ldr r0, [sp, #44]
 add r0, r0, r5 @ Flush dcache for the menuropbin data.
 ldr r1, =0x10000
 ldr r3, [r7, #0x20]
@@ -126,7 +131,7 @@ ldrb r2, [sp, #16]
 cmp r2, #0
 beq menuropbin_vramcopy
 
-ldr r0, =0xa000 @ New3DS
+ldr r0, [sp, #44] @ New3DS
 add r0, r0, r5
 ldr r1, =0x38c40000
 ldr r2, =0x10000
@@ -135,14 +140,14 @@ blx svcSleepThread_1second
 
 ldr r0, =0x1a000 @ Clear the hblauncher parameter block.
 add r0, r0, r5
-ldr r1, =0x38c40000 - 0x800*2
+ldr r1, =0x38c40000 - 0x800*4
 ldr r2, =0x800
 bl gxcmd4
 blx svcSleepThread_1second
 b menuropbin_vramcopy_finish
 
 menuropbin_vramcopy: @ Old3DS
-ldr r0, =0xa000
+ldr r0, [sp, #44]
 add r0, r0, r5
 ldr r1, =0x1f500000
 ldr r2, =0x10000
@@ -150,7 +155,10 @@ bl gxcmd4 @ Copy the menuropbin data into VRAM, which will be loaded by the belo
 blx svcSleepThread_1second
 
 menuropbin_vramcopy_finish:
-spiderheap_memfree_finish:
+ldr r6, [sp, #44]
+ldr r2, =0x10000
+add r6, r6, r2
+
 ldrb r2, [sp, #16]
 cmp r2, #0
 beq menutakeover_begin
@@ -164,7 +172,7 @@ blx checkerror_triggercrash
 bl aptExit
 
 mov r0, r5
-ldr r1, =0x1b000
+mov r1, r6
 bl freemem
 
 ldr r3, =0xa8a8a8a8
@@ -173,7 +181,7 @@ b shutdown_gsp
 
 menutakeover_begin:
 mov r0, r5
-ldr r1, =0x1b000
+mov r1, r6
 bl freemem
 
 ldr r0, =0x09a00000-0xd00000 @ Free some of the spider regular-heap so that there's enough memory available to launch Home Menu.
@@ -520,11 +528,45 @@ GSPGPU_ReleaseRight_end:
 pop {r4, pc}
 .pool
 
+calcverify_payload_size: @ r0 = raw payload size.
+@ The sizes must not have bitmask 0xf0000000 set. Returns the allocsize on success, <0 on error.
+mov r3, r0
+mov r1, #2
+mvn r0, r1
+
+mov r2, r3
+lsr r2, r2, #28
+cmp r2, #0
+bne calcverify_payload_size_end @ Verify the raw payload size.
+
+ldr r1, =0xfff
+add r3, r3, r1
+bic r3, r3, r1
+
+mov r2, r3
+lsr r2, r2, #28
+cmp r2, #0
+bne calcverify_payload_size_end
+
+ldr r1, =0x10000
+add r3, r3, r1 @ size
+
+mov r2, r3
+lsr r2, r2, #28
+cmp r2, #0
+bne calcverify_payload_size_end
+
+mov r0, r3
+
+calcverify_payload_size_end:
+bx lr
+.pool
+
 .type loadsd_payload, %function
-loadsd_payload: @ r0 = load addr
+loadsd_payload: @ r0 = ptr where the address of the allocbuf is written, r1 = u32* output payload-size.
 push {r4, r5, lr}
+push {r0, r1}
 sub sp, sp, #0x20
-mov r4, r0
 
 blx getaddr_sdpayload_path
 mov r5, r0
@@ -556,17 +598,30 @@ blx r3 @ IFile_GetSize
 cmp r0, #0
 bne loadsd_payload_end
 
-ldr r3, [sp, #4] @ Filesize must be <=0xa000.
-ldr r1, =0xa000
-mov r2, #2
-mvn r0, r2
-cmp r3, r1
-bgt loadsd_payload_end
+ldr r0, [sp, #4]
+bl calcverify_payload_size
+cmp r0, #0
+blt loadsd_payload_end
+mov r3, r0
+
+mov r1, #0 @ addr
+ldr r0, =0x10003 @ operation
+mov r4, #3 @ permissions
+mov r2, #0 @ addr1
+blx svcControlMemory
+ldr r3, =0x70707070
+blx checkerror_triggercrash @ Trigger crash on memalloc fail.
+mov r4, r1
+ldr r2, [sp, #0x20]
+str r4, [r2]
 
 @ Read the file with the above size into the input buffer.
 add r0, sp, #12 @ ctx
 add r1, sp, #0 @ u32* readcount
 mov r2, r4
+ldr r3, [sp, #4]
+ldr r4, [sp, #0x24]
+str r3, [r4]
 ldr r4, [r7, #0x34]
 blx r4 @ IFile_Read
 mov r2, #3
@@ -585,7 +640,7 @@ blx r3 @ IFile_Close
 mov r0, #0
 
 loadsd_payload_end:
-add sp, sp, #0x20
+add sp, sp, #0x28
 pop {r4, r5, pc}
 .pool
 
@@ -1380,6 +1435,42 @@ add sp, sp, #16
 pop {r4, pc}
 .pool
 
+HTTPC_GetDownloadSizeState: @ r0=handle*, r1=ctxhandle*, r2=u32* downloadedsize, r3=u32* contentsize
+push {r0, r1, r2, r3, r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, =0x00060040
+str r1, [r4, #0]
+ldr r1, [sp, #4]
+str r1, [r4, #4]
+
+ldr r0, [sp, #0]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne HTTPC_GetDownloadSizeState_end
+ldr r0, [r4, #4]
+cmp r0, #0
+bne HTTPC_GetDownloadSizeState_end
+ldr r2, [sp, #8]
+ldr r1, [r4, #8]
+cmp r2, #0
+beq HTTPC_GetDownloadSizeState_finish0
+str r1, [r2]
+
+HTTPC_GetDownloadSizeState_finish0:
+ldr r2, [sp, #12]
+ldr r1, [r4, #12]
+cmp r2, #0
+beq HTTPC_GetDownloadSizeState_end
+str r1, [r2]
+
+HTTPC_GetDownloadSizeState_end:
+add sp, sp, #16
+pop {r4, pc}
+.pool
+
 HTTPC_ReceiveData: @ r0=handle*, r1=ctxhandle, r2=buf*, r3=bufsize
 push {r0, r1, r2, r3, r4, lr}
 blx get_cmdbufptr
@@ -1493,6 +1584,35 @@ ldr r3, [r4, #8]
 str r3, [r2]
 
 HTTPC_GetResponseHeader_end:
+add sp, sp, #16
+pop {r4, pc}
+.pool
+
+HTTPC_GetResponseStatusCode: @ r0=handle*, r1=ctxhandle*, r2=u32* out
+push {r0, r1, r2, r3, r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, =0x00220040
+str r1, [r4, #0]
+ldr r1, [sp, #4]
+str r1, [r4, #4]
+
+ldr r0, [sp, #0]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne HTTPC_GetResponseStatusCode_end
+ldr r0, [r4, #4]
+cmp r0, #0
+bne HTTPC_GetResponseStatusCode_end
+ldr r2, [sp, #8]
+ldr r1, [r4, #8]
+cmp r2, #0
+beq HTTPC_GetResponseStatusCode_end
+str r1, [r2]
+
+HTTPC_GetResponseStatusCode_end:
 add sp, sp, #16
 pop {r4, pc}
 .pool
@@ -1855,13 +1975,14 @@ add sp, sp, #4
 pop {r4, r5, r6, pc}
 .pool
 
-http_do_request: @ r0 = output, r1 = url, r2 = flag.
+http_do_request: @ r0 = output, r1 = url, r2 = flag, r3 = u32* outsize.
 push {r4, r5, r6, lr}
-sub sp, sp, #0x58
+sub sp, sp, #0x5c
 mov r5, r0
 
 str r1, [sp, #0x50]
 str r2, [sp, #0x54]
+str r3, [sp, #0x58]
 
 add r0, sp, #24
 mov r3, #0
@@ -1876,8 +1997,10 @@ mov r3, #0
 ldr r4, [r7, #0x18]
 blx r4 @ srv_GetServiceHandle
 cmp r0, #0
-bne http_do_request_end
+beq http_do_request_getsecondservhandle
+bl http_do_request_end
 
+http_do_request_getsecondservhandle:
 add r0, sp, #16
 mov r3, #0
 str r3, [r0]
@@ -1954,10 +2077,45 @@ bl HTTPC_GetResponseHeader @ r0=handle*, r1=ctxhandle, r2=headername*, r3=header
 b http_do_request_close
 
 http_do_request_recvdata:
+add r0, sp, #16 @ Verify that the status-code is 200(and also so that it won't continue until the http response was actually received).
+ldr r1, [sp, #20]
+add r2, sp, #0
+bl HTTPC_GetResponseStatusCode @ r0=handle*, r1=ctxhandle*, r2=u32* out
+cmp r0, #0
+bne http_do_request_close
+ldr r0, [sp, #0]
+cmp r0, #200
+bne http_do_request_close
+
 add r0, sp, #16
 ldr r1, [sp, #20]
-mov r2, r5
-ldr r3, =0xa000
+mov r2, #0
+add r3, sp, #0
+bl HTTPC_GetDownloadSizeState @ r0=handle*, r1=ctxhandle*, r2=u32* downloadedsize, r3=u32* contentsize
+cmp r0, #0
+bne http_do_request_close
+
+ldr r0, [sp, #0]
+ldr r3, [sp, #0x58]
+str r0, [r3]
+bl calcverify_payload_size
+cmp r0, #0
+blt http_do_request_close
+mov r3, r0
+
+mov r1, #0 @ addr
+ldr r0, =0x10003 @ operation
+mov r4, #3 @ permissions
+mov r2, #0 @ addr1
+blx svcControlMemory
+ldr r3, =0x74747474
+blx checkerror_triggercrash @ Trigger crash on memalloc fail.
+str r1, [r5]
+mov r2, r1
+
+add r0, sp, #16
+ldr r1, [sp, #20]
+ldr r3, [sp, #0]
 bl HTTPC_ReceiveData
 
 http_do_request_close:
@@ -1981,16 +2139,18 @@ blx svcCloseHandle
 mov r0, r5
 
 http_do_request_end:
-add sp, sp, #0x58
+add sp, sp, #0x5c
 pop {r4, r5, r6, pc}
 .pool
 
-http_download_payload: @ r0 = payloadbuf, r1 = new3ds_flag
+http_download_payload: @ r0 = ptr where the payload allocbuf addr will be written, r1 = u32* payloadsize, r2 = new3ds_flag
 push {r4, r5, r6, lr}
 sub sp, sp, #0xd0
 mov r5, r0
+mov r6, r1
 
 add r0, sp, #0x50
+mov r1, r2
 bl load_systemversion
 cmp r0, #0
 bne http_download_payload_end
@@ -1999,6 +2159,7 @@ bne http_download_payload_end
 add r0, sp, #0x50
 add r1, sp, #0x50
 mov r2, #0
+mov r3, #0
 bl http_do_request @ r0 = output, r1 = url, r2 = flag.
 cmp r0, #0
 bne http_download_payload_end
@@ -2007,6 +2168,7 @@ bne http_download_payload_end
 mov r0, r5
 add r1, sp, #0x50
 mov r2, #1
+mov r3, r6
 bl http_do_request
 
 http_download_payload_end:
