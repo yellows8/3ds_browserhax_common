@@ -76,51 +76,7 @@ blx checkerror_triggercrash @ Trigger crash on payload loading fail.
 ldr r5, [sp, #36]
 ldr r6, [sp, #40]
 
-mov r0, r5 @ payloadbuf
-mov r1, r6 @ payloadbufsize
-add r2, sp, #20 @ output
-bl locatepayload_data
-ldr r3, =0x77777778
-blx checkerror_triggercrash
-
-ldr r3, =0xfff
-
-mov r1, r6 @ dst0
-ldr r2, =0x8000
-add r2, r2, r6 @ dst1
-
-add r1, r1, r3
-add r2, r2, r3
-bic r1, r1, r3
-bic r2, r2, r3
-
-str r1, [sp, #44]
-
-ldr r0, [sp, #20] @ Src offset in the payload.
-ldr r6, [sp, #24] @ Size of the menuropbin.
-
-add r0, r0, r5
-add r1, r1, r5
-add r2, r2, r5
-mov r3, #0
-
-setup_initial_menuropdata: @ Copy the menuropbin from src to dst0 and dst1.
-ldr r4, [r0, r3]
-str r4, [r1, r3]
-str r4, [r2, r3]
-add r3, r3, #4
-cmp r3, r6
-blt setup_initial_menuropdata
-
-mov r0, r1
-mov r1, #1
-ldrb r2, [sp, #16]
-bl patchPayload
-ldr r3, =0xa0a0a0a0
-blx checkerror_triggercrash @ Trigger crash on payload-patching fail.
-
-ldr r0, [sp, #44]
-add r0, r0, r5 @ Flush dcache for the menuropbin data.
+mov r0, r5 @ Flush dcache for the menuropbin data.
 ldr r1, =0x10000
 ldr r3, [r7, #0x20]
 blx r3
@@ -131,16 +87,14 @@ ldrb r2, [sp, #16]
 cmp r2, #0
 beq menuropbin_vramcopy
 
-ldr r0, [sp, #44] @ New3DS
-add r0, r0, r5
+mov r0, r5 @ New3DS
 ldr r1, =0x38c40000
 ldr r2, =0x10000
 bl gxcmd4
 blx svcSleepThread_1second
 
 @ Clear the hblauncher parameter block.
-ldr r0, [sp, #44]
-add r0, r0, r5
+mov r0, r5
 
 mov r1, #0
 mov r2, r1
@@ -156,8 +110,7 @@ mov r1, r3
 ldr r3, [r7, #0x20]
 blx r3
 
-ldr r0, [sp, #44]
-add r0, r0, r5
+mov r0, r5
 ldr r1, =0x38c40000 - 0x800*6
 ldr r2, =0x2800 @ 0x2000 is included for backwards-compatibility.
 bl gxcmd4
@@ -165,25 +118,27 @@ blx svcSleepThread_1second
 b menuropbin_vramcopy_finish
 
 menuropbin_vramcopy: @ Old3DS
-ldr r0, [sp, #44]
-add r0, r0, r5
+mov r0, r5
 ldr r1, =0x1f500000
 ldr r2, =0x10000
 bl gxcmd4 @ Copy the menuropbin data into VRAM, which will be loaded by the below homemenu code later.
 blx svcSleepThread_1second
 
 menuropbin_vramcopy_finish:
-ldr r6, [sp, #44]
-ldr r2, =0x10000
-add r6, r6, r2
+mov r0, r6
+bl calcverify_payload_size
+mov r6, r0
 
 ldrb r2, [sp, #16]
 cmp r2, #0
 beq menutakeover_begin
 
-ldr r0, [sp, #28] @ Src offset in the payload.
-ldr r1, [sp, #32] @ Size of the loadropbin blob.
-add r0, r0, r5
+ldr r3, =0x10000
+mov r0, r5
+add r0, r0, r3 @ loadropbin blob address
+ldr r1, [sp, #40]
+sub r1, r1, r3 @ loadropbin blob size
+
 bl regular_menutakeover
 ldr r3, =0xa4a4a4a4
 blx checkerror_triggercrash
@@ -557,17 +512,13 @@ lsr r2, r2, #28
 cmp r2, #0
 bne calcverify_payload_size_end @ Verify the raw payload size.
 
+ldr r1, =0x10004
+cmp r3, r1
+bcc calcverify_payload_size_end @ Original payload size must be at least 0x10004-bytes.
+
 ldr r1, =0xfff
 add r3, r3, r1
 bic r3, r3, r1
-
-mov r2, r3
-lsr r2, r2, #28
-cmp r2, #0
-bne calcverify_payload_size_end
-
-ldr r1, =0x10000
-add r3, r3, r1 @ size
 
 mov r2, r3
 lsr r2, r2, #28
@@ -662,296 +613,6 @@ add sp, sp, #0x28
 pop {r4, r5, pc}
 .pool
 
-@ This extracts info from the otherapp payload. Proper metadata/whatever for this stuff would be ideal, but it has to be done this way for now.
-locatepayload_data: @ r0 = payloadbuf, r1 = size, r2 = u32* output
-push {r4, r5, r6, lr}
-mov r4, r0
-mov r5, r1
-mov r6, r2
-
-mov r0, #0 @ Locate the otherapp-payload main() .pool(the code which runs under the actual "otherapp") via the 0x6e4c5f4e value.
-ldr r1, =0x6e4c5f4e
-locatepayload_data_lp:
-ldr r2, [r4, r0]
-cmp r1, r2
-beq locatepayload_data_lpend
-
-locatepayload_data_lpnext:
-add r0, r0, #4
-cmp r0, r5
-blt locatepayload_data_lp
-mov r0, #0
-mvn r0, r0
-b locatepayload_data_end
-
-locatepayload_data_lpend: @ Locate the "b ." instruction at the end of main(), which is also right before the .pool.
-ldr r1, =0xeafffffe
-sub r0, r0, #4
-
-locatepayload_data_lp2:
-ldr r2, [r4, r0]
-cmp r1, r2
-beq locatepayload_data_lp2end
-
-locatepayload_data_lp2next:
-sub r0, r0, #4
-cmp r0, #0
-bgt locatepayload_data_lp2
-mov r0, #1
-mvn r0, r0
-b locatepayload_data_end
-
-locatepayload_data_lp2end:
-add r0, r0, #4 @ r0 = offset for main() .pool. The below code assumes that the required values are always located at the same relative-offset in the .pool.
-
-mov r1, r5
-mov r2, r6
-mov r3, r0
-add r3, r3, r4
-add r3, r3, #8
-mov r0, r4
-bl locatepayload_writeoutput @ Load the menuropbin offset/size + verify them, and write to the output.
-cmp r0, #0
-bne locatepayload_data_end
-
-mov r0, #0 @ Locate the inject_payload() function .pool in the otherapp-payload(which actually runs under the "otherapp").
-ldr r1, =0x00989680
-ldr r3, =0xdeadcafe
-locatepayload_data_lp3:
-ldr r2, [r4, r0]
-cmp r1, r2
-bne locatepayload_data_lp3next
-mov r2, r0
-add r2, r2, r4
-ldr r2, [r2, #0x10]
-cmp r3, r2
-beq locatepayload_data_lp3end
-
-locatepayload_data_lp3next:
-add r0, r0, #4
-cmp r0, r5
-blt locatepayload_data_lp3
-mov r0, #7
-mvn r0, r0
-b locatepayload_data_end
-
-locatepayload_data_lp3end:
-add r0, r0, #4
-
-mov r1, r5
-mov r2, r6
-add r2, r2, #8
-mov r3, r0
-add r3, r3, r4
-mov r0, r4
-bl locatepayload_writeoutput @ Load the loadropbin blob offset/size + verify them, and write to the output+8.
-cmp r0, #0
-bne locatepayload_data_end
-
-mov r0, #0
-
-locatepayload_data_end:
-pop {r4, r5, r6, pc}
-.pool
-
-locatepayload_writeoutput: @ r0 = payloadbuf, r1 = payloadbufsize, r2 = u32* out. r3 = ptr to two words: +0 = <ptr to size in payload>, +4 = address of the binary.
-push {r4, r5, r6, lr}
-mov r4, r0
-mov r5, r1
-mov r6, r2
-
-mov r1, r3
-mov r2, r3
-ldr r1, [r1, #0] @ ptr to size.
-ldr r2, [r2, #4] @ address of the binary.
-
-mov r0, #2
-mvn r0, r0
-ldr r3, =0x00101000
-sub r2, r2, r3 @ r2 = offset of binary, which is written to *(inr2+0).
-cmp r2, r5
-bcs locatepayload_writeoutput_end @ The binary offset must be within the payloadbuf.
-str r2, [r6, #0]
-
-@ Write the size of the binary to *(inr2+4).
-mov r0, #3
-mvn r0, r0
-sub r1, r1, r3
-cmp r1, r5
-bcs locatepayload_writeoutput_end @ The calculated offset in the payload must be within the input size.
-mov r0, #4
-mvn r0, r0
-ldr r1, [r4, r1]
-cmp r1, r5
-bcs locatepayload_writeoutput_end @ The binary size must be within the payloadbuf.
-str r1, [r6, #4]
-
-mov r0, #5
-mvn r0, r0
-mov r3, r2
-add r3, r3, r1
-cmp r3, r5
-bcs locatepayload_writeoutput_end @ binary_offset + binary_size must be within the payloadbuf.
-mov r0, #6
-mvn r0, r0
-cmp r3, r2
-bcc locatepayload_writeoutput_end @ Check for integer-overflow with the above add.
-
-mov r0, #0
-
-locatepayload_writeoutput_end:
-pop {r4, r5, r6, pc}
-.pool
-
-patchPayload: @ r0 = menuropbin*, r1 = targetProcessIndex, r2 = new3ds_flag. This is somewhat based on code from hblauncher with the same function name(minus the code for locating the dlplay memorymap structure).
-push {r4, r5, r6, r7, lr}
-sub sp, sp, #8
-
-cmp r2, #0
-bne patchPayload_new3dsinit
-
-ldr r4, =(0x30000000+0x04000000)//Old3DS
-b patchPayload_init
-
-patchPayload_new3dsinit:
-ldr r4, =(0x30000000+0x07c00000)
-
-patchPayload_init:
-str r4, [sp, #4]
-
-ldr r2, =(0x8000-4)
-mov r3, #0
-
-patchPayload_lp: @ Locate the memorymap structure for the dlplay app.
-ldr r4, [r0, r3]
-add r3, r3, #4
-ldr r5, [r0, r3]
-
-cmp r4, #4
-bne patchPayload_lpnext
-ldr r6, =0x193000
-cmp r5, r6
-bne patchPayload_lpnext
-
-sub r3, r3, #4
-b patchPayload_lpend
-
-patchPayload_lpnext:
-cmp r3, r2
-blt patchPayload_lp
-
-patchPayload_lpend:
-cmp r2, r3
-beq patchPayload_enderror
-
-add r4, r0, r3
-
-ldr r2, =(0x8000-0x40)
-mov r3, #0
-
-patchPayload_patchlp:
-ldr r5, [r0, r3]
-
-lsr r6, r5, #4 @ The loaded word value must be 0xBABE0001..0xBABE0007.
-ldr r7, =0xBABE000
-cmp r6, r7
-bne patchPayload_patchlpnext
-mov r6, #0xf
-and r6, r6, r5
-cmp r6, #0
-beq patchPayload_patchlpnext
-cmp r6, #7
-bgt patchPayload_patchlpnext
-
-cmp r6, #1
-bne patchPayload_patchlp_l2
-str r1, [r0, r3] @ targetProcessIndex
-b patchPayload_patchlpnext
-
-patchPayload_patchlp_l2:
-cmp r6, #2
-bne patchPayload_patchlp_l3
-ldr r6, [sp, #4]
-ldr r7, [r4, #0x10]
-sub r6, r6, r7
-str r6, [r0, r3] @ APP_START_LINEAR
-b patchPayload_patchlpnext
-
-patchPayload_patchlp_l3:
-cmp r6, #3
-bne patchPayload_patchlp_l4
-ldr r7, [r4, #0x14]
-str r7, [r0, r3] @ processHookAddress
-b patchPayload_patchlpnext
-
-patchPayload_patchlp_l4:
-cmp r6, #4
-bne patchPayload_patchlp_l5
-ldr r7, [r4, #0x1c]
-str r7, [r0, r3] @ TID-low
-b patchPayload_patchlpnext
-
-patchPayload_patchlp_l5:
-cmp r6, #5
-bne patchPayload_patchlp_l7
-ldr r7, [r4, #0x20]
-str r7, [r0, r3] @ TID-high
-b patchPayload_patchlpnext
-
-patchPayload_patchlp_l7:
-cmp r6, #7
-bne patchPayload_patchlp_l6
-ldr r7, [r4, #0x18]
-str r7, [r0, r3] @ processAppCodeAddress
-b patchPayload_patchlpnext
-
-patchPayload_patchlp_l6:
-cmp r6, #6 @ memorymap
-bne patchPayload_patchlpnext
-
-ldr r6, [r4, #0] @ Calculate the memorymap structure size, and restrict the size if needed.
-mov r5, #0xc
-mul r6, r6, r5
-add r6, r6, #0x30
-ldr r5, =0x8000
-cmp r6, r5
-bcc patchPayload_memorymap_cpy_init
-mov r6, r5
-
-patchPayload_memorymap_cpy_init:
-mov r5, #0
-str r6, [sp, #0]
-
-patchPayload_memorymap_cpy: @ Copy the memorymap structure to the current ropbin location.
-ldr r7, [r4, r5]
-mov r6, r3
-add r6, r6, r5
-str r7, [r0, r6]
-add r5, r5, #4
-ldr r6, [sp, #0]
-cmp r5, r6
-blt patchPayload_memorymap_cpy
-
-patchPayload_patchlpnext:
-add r3, r3, #4
-cmp r3, r2
-blt patchPayload_patchlp
-
-b patchPayload_endsuccess
-
-patchPayload_enderror:
-mov r0, #0
-mvn r0, r0
-b patchPayload_end
-
-patchPayload_endsuccess:
-mov r0, #0
-
-patchPayload_end:
-add sp, sp, #8
-pop {r4, r5, r6, r7, pc}
-.pool
-
 @ This is based on code from hblauncher.
 regular_menutakeover: @ r0 = src loadropbin blob address, r1 = blob size.
 push {r4, r5, r6, lr}
@@ -969,7 +630,7 @@ ldr r3, =0x74747474
 blx checkerror_triggercrash @ Trigger crash on memalloc fail.
 mov r4, r1
 
-ldr r5, =0x37c00000
+ldr r5, =0x37c00000 @ Hard-coded for New3DS, since this function is only used by this loader on New3DS.
 
 regular_menutakeover_lp:
 mov r0, r4 @ Flush buffer dcache.
@@ -2392,7 +2053,7 @@ regionids_array:
 .align 2
 
 payloadurl_formatstr:
-.string "http://smea.mtheall.com/get_payload.php?version=%s-%d-%d-%d-%d-%s" //Sample URL: http://smea.mtheall.com/get_payload.php?version=NEW-10-1-0-27-JPN
+.string "http://smea.mtheall.com/get_ropbin_payload.php?version=%s-%d-%d-%d-%d-%s" //Sample URL: http://smea.mtheall.com/get_payload.php?version=NEW-10-1-0-27-JPN
 payloadurl_formatstr_end:
 .align 2
 
@@ -2405,7 +2066,7 @@ httphdr_useragentstr:
 .align 2
 
 httphdr_useragentvaluestr:
-.string "3dsbrowserhax_hblauncher_loader/v1.0"
+.string "3dsbrowserhax_hblauncher_loader/v1.2"
 .align 2
 
 getaddrs_menustub:
