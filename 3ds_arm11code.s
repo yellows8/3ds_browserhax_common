@@ -2016,7 +2016,7 @@ bx lr
 .pool
 
 sdpayload_path:
-.string16 "sdmc:/browserhax_hblauncher_payload.bin"
+.string16 "sdmc:/browserhax_hblauncher_ropbin_payload.bin"
 
 .align 2
 

@@ -58,7 +58,7 @@ This codebase is mainly intended for loading an arbitrary arm11code payload, at 
 
 In some kinda rare(?) cases on Old3DS, a crash/"hang" may occur with a gray or white bottom-screen. If it ever returns to Home Menu when the bottom-screen was gray, then a reboot is *required*.
 
-This loader will initially try to load the hblauncher otherapp payload from SD-card "/browserhax_hblauncher_payload.bin". That payload can be downloaded from here: https://smealum.github.io/3ds/  
+This loader will initially try to load the hblauncher ropbin payload from SD-card "/browserhax_hblauncher_ropbin_payload.bin". This is separate from the otherapp payload.  
 If loading from SD fails, this loader will then automatically detect the required payload, then download it with HTTP. This latter method is highly recommended(unless this method doesn't work well for the user): with a "/boot.3dsx" on SD card, there's zero other setup/user-input needed once the browserhax is triggered successfully.  
 When loading the payload with both of the above methods fails, a crash will be triggered.
 
