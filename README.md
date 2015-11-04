@@ -18,6 +18,7 @@ New3DS system Internet Browser(SKATER) (see also http://3dbrew.org/wiki/Internet
 * 1.1.9996 v1027 9.3.0-21..9.5.0-23
 * 1.2.10085 v2051 9.6.0-24..9.8.0-25
 * 1.3.10126 v3077 9.9.0-26..10.1.0-27
+* 1.4.10138 v4096 10.2.0-28
 
 # Usage with seperate exploits
 With php, this repo can be used with the following:
