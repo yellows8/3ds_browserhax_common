@@ -5,6 +5,8 @@ The versions below are listed in the following format: browserver titlever sysve
 
 Also note that with the system web-browser, only the last number in the system-version(X.X.X-NUPVER) actually matters for the browser version. Loading arm11code for pre-v5.0 Old3DS browser versions is only supported with pre-v5.0 NATIVE_FIRM. For example, arm11code loading wouldn't work if the system-version is X.Y.Z-NUPVER, where NUPVER is less than 11 and "X.Y.Z" is at least "5.0.0".
 
+Only the USA, EUR, and JPN browsers are supported: the main ExeFS codebin are all identical for these regions, unlike the other regions.
+
 Old3DS system Internet Browser(spider) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions_2):
 * 1.7455 v1024/2.1.0-4..3.0.0-6
 * 1.7498 v2050/4.0.0-7..4.5.0-10
