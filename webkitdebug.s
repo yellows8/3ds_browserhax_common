@@ -4,8 +4,8 @@
 Build with: arm-none-eabi-as -o webkitdebug.elf webkitdebug.s && arm-none-eabi-objcopy -O binary webkitdebug.elf webkitdebug.bin
 
 0x0FFF8000 structure:
-+0: Reserved for a wkc_malloc version of the below.
-+4: Code to jump to for executing the original function called by wkc_free. This should be 8-bytes following the push instruction, in the function called by wkc_free.
++0: Reserved.
++4: Code to jump to for executing the original webkit_free code. This should be 8-bytes following the "push" instruction.
 +8: Base address for the memalloc area. The 0x1000-bytes before this should be unmapped.
 +12: Size of the memalloc area.
 +16: Address which will be used for the next memalloc.
@@ -33,13 +33,16 @@ Also, even after this is setup, it won't catch all memory allocation/freeing.
 
 _start:
 
-wkcmalloc_jump:
-b wkc_malloc
+webkitmalloc_jump:
+b webkit_malloc
 
-wkcfree_jump:
-b wkc_free
+webkitfree_jump:
+b webkit_free
 
-wkc_malloc:
+webkitrealloc_jump:
+b webkit_realloc
+
+webkit_malloc:
 mov r1, r0
 add r1, r1, #16
 ldr r2, =0xfff
@@ -109,11 +112,11 @@ add r0, r0, #12
 bx lr
 .pool
 
-wkc_free:
+webkit_free:
 cmp r0, #0
 bxeq lr
 
-ldr r3, =0x0FFF8000 @ if(inputptr < <base_memalloc_addr>)<jump to normal wkc_free funcptr>
+ldr r3, =0x0FFF8000 @ if(inputptr < <base_memalloc_addr>)<jump to normal webkit_free funcptr>
 ldr r2, [r3, #8]
 cmp r0, r2
 pushcc {r4, lr}
@@ -155,4 +158,54 @@ strne r0, [r3]
 
 bx lr
 .pool
+
+webkit_realloc: @ inr0=bufptr is written here inr1=inmemptr inr2=size
+push {r0, r1, r2, r4, r5, lr}
+mov r4, #0
+
+add r5, sp, #0
+//add r5, sp, #4
+
+ldr r0, [r5, #4]
+cmp r0, #0
+beq webkit_realloc_skiptofree
+
+bl webkit_malloc
+mov r4, r0
+
+ldr r1, [r5, #0]
+ldr r2, [r5, #4]
+bl memcpy
+
+webkit_realloc_skiptofree:
+ldr r0, [r5, #0]
+cmp r0, #0
+beq webkit_realloc_finish
+bl webkit_free
+
+webkit_realloc_finish:
+mov r0, r4
+//ldr r1, [sp, #0]
+//str r0, [r1]
+
+pop {r0, r1, r2, r4, r5, pc}
+.pool
+
+memcpy:
+cmp r2, #0
+bxeq lr
+ldr r3, [r1], #4
+str r3, [r0], #4
+sub r2, r2, #4
+cmp r2, #4
+bcs memcpy
+
+memcpy_finishlp:
+cmp r2, #0
+bxeq lr
+
+ldrb r3, [r1], #1
+strb r3, [r0], #1
+sub r2, r2, #1
+b memcpy_finishlp
 
