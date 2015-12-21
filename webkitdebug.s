@@ -34,15 +34,18 @@ Also, even after this is setup, it won't catch all memory allocation/freeing.
 _start:
 
 webkitmalloc_jump:
-b webkit_malloc
+b malloc
 
 webkitfree_jump:
-b webkit_free
+b wkc_free
 
 webkitrealloc_jump:
-b webkit_realloc
+b wkc_realloc
 
-webkit_malloc:
+fastmalloc_reallocjump:
+b fastmalloc_realloc
+
+malloc:
 mov r1, r0
 add r1, r1, #16
 ldr r2, =0xfff
@@ -112,17 +115,15 @@ add r0, r0, #12
 bx lr
 .pool
 
-webkit_free:
+free:
 cmp r0, #0
 bxeq lr
 
-ldr r3, =0x0FFF8000 @ if(inputptr < <base_memalloc_addr>)<jump to normal webkit_free funcptr>
+ldr r3, =0x0FFF8000 @ if(inputptr < <base_memalloc_addr>)return 1;
 ldr r2, [r3, #8]
 cmp r0, r2
-pushcc {r4, lr}
-movcc r4, r0
-ldrcc r3, [r3, #4]
-bxcc r3
+movcc r0, #1
+bxcc lr
 
 sub r0, r0, #12 @ Get the actual page address, since the first 12-bytes before the actual buffer is the header.
 
@@ -156,37 +157,98 @@ cmp r0, #0 @ If everything works as intended, this should only ever happen on do
 ldrne r3, =0x94949494
 strne r0, [r3]
 
+mov r0, #0
 bx lr
 .pool
 
-webkit_realloc: @ inr0=bufptr is written here inr1=inmemptr inr2=size
+wkc_free:
+mov r1, #0
+b _free
+
+_free:
+push {r0, r1, lr}
+
+bl free
+
+pop {r2, r3, lr}
+
+cmp r0, #0
+bxeq lr
+
+@ Instead of letting the normal code free the memory, just overwrite the first 0x8-bytes of the buffer with junk without freeing it at all.
+
+/*ldr r1, =0xcccccccc
+str r1, [r1]*/
+
+mov r0, r2
+/*mov r1, r3
+ldr r3, =0x0FFF8000
+
+cmp r1, #0 @ wkc_free
+pusheq {r4, lr}
+moveq r4, r0
+ldreq r3, [r3, #4]
+bxeq r3*/
+
+ldr r1, =0xcccccccc
+add r2, r1, #1
+add r3, r2, #1
+
+stmia r0!, {r1, r2}
+
+/*stmia r0!, {r1, r2, r3}
+add r1, r1, #3
+add r2, r2, #3
+add r3, r3, #3*/
+//str r1, [r0]
+/*stmia r0!, {r1, r2, r3}
+add r1, r1, #3
+add r2, r2, #3
+stmia r0!, {r1, r2}*/
+
+bx lr
+.pool
+
+wkc_realloc:
+mov r2, #0
+b realloc
+
+fastmalloc_realloc:
+push {r0, lr}
+mov r0, r1
+mov r1, r2
+mov r2, #1
+bl realloc
+pop {r3, lr}
+str r0, [r3]
+bx lr
+
+realloc: @ inr0=inmemptr, inr1=size, inr2=id
 push {r0, r1, r2, r4, r5, lr}
 mov r4, #0
 
 add r5, sp, #0
-//add r5, sp, #4
 
 ldr r0, [r5, #4]
 cmp r0, #0
-beq webkit_realloc_skiptofree
+beq realloc_skiptofree
 
-bl webkit_malloc
+bl malloc
 mov r4, r0
 
 ldr r1, [r5, #0]
 ldr r2, [r5, #4]
 bl memcpy
 
-webkit_realloc_skiptofree:
+realloc_skiptofree:
 ldr r0, [r5, #0]
 cmp r0, #0
-beq webkit_realloc_finish
-bl webkit_free
+beq realloc_finish
+ldr r1, [sp, #8]
+bl _free
 
-webkit_realloc_finish:
+realloc_finish:
 mov r0, r4
-//ldr r1, [sp, #0]
-//str r0, [r1]
 
 pop {r0, r1, r2, r4, r5, pc}
 .pool
