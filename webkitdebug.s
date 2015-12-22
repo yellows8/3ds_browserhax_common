@@ -1,5 +1,5 @@
 .arm
-
+.text
 /*
 Build with: arm-none-eabi-as -o webkitdebug.elf webkitdebug.s && arm-none-eabi-objcopy -O binary webkitdebug.elf webkitdebug.bin
 
@@ -15,6 +15,8 @@ After initializing that^, the code called by wkc_malloc/wkc_free must be overwri
 For example, with this binary being stored at 0x00100000, you can write "0xe51ff004 0x00100000" for the above malloc code, and "0xe51ff004 0x00100004" for the above free code.
 
 This was inspired by: https://developer.apple.com/library/mac/documentation/Performance/Conceptual/ManagingMemory/Articles/MallocDebug.html
+
+NOTE: Originally each allocation had a page-guard before/after the allocated memory. This was disabled due to running out of memory.
 
 This is used for overriding the memory allocation/free functions with the below code. Each allocation will use a dedicated set of memory page(s). Hence, for example, an allocation less than 0x100-bytes will result in 0x1000-bytes being allocated with svcControlMemory. Right before the returned buffer is a 12-byte chunk header. Prior to that is unmapped memory(page-guard), likewise for the end of the allocated buffer. This will never allocate memory at the same vaddr more than once.
 
@@ -63,7 +65,8 @@ ldr r3, =0x0FFF8000
 ldr r3, [r3, #16]
 
 push {r5}
-ldr r5, =0x1000
+//ldr r5, =0x1000
+mov r5, r0
 add r5, r5, r1 @ r5 = total_aligned_size with page-guard.
 add r3, r3, r5 @ r3 = Endaddr of the memalloc including the page-guard.
 pop {r5}
@@ -103,7 +106,8 @@ add r1, r1, r2
 ldr r2, =0x45425457
 str r2, [r1] @ Initialize the magicnum @ <actualbuffer_addr> + <actualbuffer_size>.
 
-ldr r2, =0x1000
+//ldr r2, =0x1000
+mov r2, #0
 add r2, r2, r3
 add r2, r2, r0
 
@@ -139,8 +143,8 @@ add r2, r2, #12
 ldr r2, [r2]
 ldr r3, =0x45425457
 cmp r2, r3
-ldrne r4, =0xacacacac
-strne r2, [r4]
+//ldrne r4, =0xacacacac
+//strne r2, [r4] @ Disabled because of libcurl(?) use-after-free issues.
 
 ldr r3, [r0, #4] @ Aligned total size.
 
@@ -190,8 +194,29 @@ moveq r4, r0
 ldreq r3, [r3, #4]
 bxeq r3*/
 
+/*ldr r1, [r0]
+lsr r1, r1, #24
+cmp r1, #0
+bne _free_finish
+
+push {r0, lr}
+mov r0, #0x100
+bl malloc
+push {r0}
+ldr r1, [sp, #4]
+mov r2, #0xfc
+add r0, r0, #4
+bl memcpy
+ldr r0, [sp, #4]
+ldr r1, [sp, #0]
+str r0, [r1]
+pop {r3}
+pop {r0, lr}
+
+_free_finish:*/
 ldr r1, =0xcccccccc
 add r2, r1, #1
+mov r2, r3
 add r3, r2, #1
 
 stmia r0!, {r1, r2}
@@ -237,6 +262,8 @@ bl malloc
 mov r4, r0
 
 ldr r1, [r5, #0]
+cmp r1, #0
+beq realloc_skiptofree
 ldr r2, [r5, #4]
 bl memcpy
 
@@ -244,8 +271,11 @@ realloc_skiptofree:
 ldr r0, [r5, #0]
 cmp r0, #0
 beq realloc_finish
+/*
+//This is commented-out because the libcurl(?) build used with spider oss.cro, has use-after-free issues with the realloc() input memptr.
 ldr r1, [sp, #8]
 bl _free
+#endif*/
 
 realloc_finish:
 mov r0, r4
