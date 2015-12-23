@@ -58,6 +58,10 @@ if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2 (not actually supported)
 {
 	$browserver = 6;
 }
+else if(strstr($ua, "1.7616"))//1.7616 v7168/10.2.0-28
+{
+	$browserver = 7;
+}
 
 //new3ds: Mobile-NintendoBrowser-version titlever sysver
 if(strstr($ua, "1.0.9934"))//1.0.9934 v10 9.0.0-20
@@ -88,7 +92,7 @@ if($browserver == -1)
 	exit;
 }
 
-if(!($browserver>=1 && $browserver<=6) && !(($browserver & 0x80) && ($browserver>=0x80 && $browserver<=0x84)))
+if(!($browserver>=1 && $browserver<=7) && !(($browserver & 0x80) && ($browserver>=0x80 && $browserver<=0x84)))
 {
 	echo "This browser version is not supported.\n";
 	//error_log("3dsbrowserhax_common.php: BROWSERVER NOT SUPPORTED.");
@@ -605,6 +609,10 @@ else if($browserver == 6)
 	$ROP_STMR0_R0PC = 0x001bc8c0;
 
 	$ROP_snprintf = $OSSCRO_MAPADR+0x3c0-0x4;
+}
+else if($browserver == 7)
+{
+	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v7168.php");
 }
 else if($browserver == 0x80)//new3ds
 {

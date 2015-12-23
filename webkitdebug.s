@@ -102,6 +102,19 @@ str r1, [r0, #8] @ Store the magicnum at the end of the header to catch chunk co
 
 mov r1, r0
 add r1, r1, #12
+add r2, r2, r1
+ldr r3, =0x40506073
+
+malloc_meminit:
+str r3, [r1], #4
+cmp r1, r2
+bcc malloc_meminit
+
+ldr r2, [r0, #0]
+ldr r3, [r0, #4]
+
+mov r1, r0
+add r1, r1, #12
 add r1, r1, r2
 ldr r2, =0x45425457
 str r2, [r1] @ Initialize the magicnum @ <actualbuffer_addr> + <actualbuffer_size>.

@@ -14,6 +14,7 @@ Old3DS system Internet Browser(spider) (see also http://3dbrew.org/wiki/Internet
 * 1.7567 v4096/7.1.0-16..9.5.0-22
 * 1.7585 v5121/9.5.0-23..9.8.0-25
 * 1.7610 v6149/9.9.0-26..10.1.0-27
+* 1.7616 v7168/10.2.0-28..10.3.0-28
 
 New3DS system Internet Browser(SKATER) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions):
 * 1.0.9934 v10 9.0.0-20..9.2.0-20
