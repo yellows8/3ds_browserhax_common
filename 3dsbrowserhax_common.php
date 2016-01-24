@@ -33,66 +33,78 @@ if(!strstr($ua, "Mozilla/5.0 (Nintendo 3DS; U; ; ") && !strstr($ua, "Mozilla/5.0
 
 if(!isset($generatebinrop))$generatebinrop = 0;
 
-if(!isset($browserver))$browserver = -1;
-
-//old3ds: browserver titlever sysver
-if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2 (not actually supported)
+if(isset($_REQUEST['browserver']))
 {
-	$browserver = 0;
-} else if(strstr($ua, "1.7455"))//1.7455 v1024/2.1.0-4
-{
-	$browserver = 1;
-} else if(strstr($ua, "1.7498"))//1.7498 v2050/4.0.0-7
-{
-	$browserver = 2;
-} else if(strstr($ua, "1.7552"))//1.7552 v3075/5.0.0-11 / v3088/7.0.0-13 (v3088 main ncch is the same as v3075, only the manual CFA was updated)
-{
-	$browserver = 3;
-} else if(strstr($ua, "1.7567"))//1.7567 v4096/7.1.0-16
-{
-	$browserver = 4;
-} else if(strstr($ua, "1.7585"))//1.7585 v5121/9.5.0-23
-{
-	$browserver = 5;
-} else if(strstr($ua, "1.7610"))//1.7610 v6149/9.9.0-26
-{
-	$browserver = 6;
-}
-else if(strstr($ua, "1.7616"))//1.7616 v7168/10.2.0-28
-{
-	$browserver = 7;
+	$browserver = intval($_REQUEST['browserver'], 16);
 }
 
-//new3ds: Mobile-NintendoBrowser-version titlever sysver
-if(strstr($ua, "1.0.9934"))//1.0.9934 v10 9.0.0-20
+if(!isset($browserver))
 {
-	$browserver = 0x80;
-}
-else if(strstr($ua, "1.1.9996"))//1.1.9996 v1027 9.3.0-21
-{
-	$browserver = 0x81;
-}
-else if(strstr($ua, "1.2.10085"))//1.2.10085 v2051 9.6.0-24
-{
-	$browserver = 0x82;
-}
-else if(strstr($ua, "1.3.10126"))//1.3.10126 v3077 9.9.0-26
-{
-	$browserver = 0x83;
-}
-else if(strstr($ua, "1.4.10138"))//1.4.10138 v4096 10.2.0-28
-{
-	$browserver = 0x84;
+	$browserver = -1;
+
+	//old3ds: browserver titlever sysver
+	if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2 (not actually supported)
+	{
+		$browserver = 0;
+	} else if(strstr($ua, "1.7455"))//1.7455 v1024/2.1.0-4
+	{
+		$browserver = 1;
+	} else if(strstr($ua, "1.7498"))//1.7498 v2050/4.0.0-7
+	{
+		$browserver = 2;
+	} else if(strstr($ua, "1.7552"))//1.7552 v3075/5.0.0-11 / v3088/7.0.0-13 (v3088 main ncch is the same as v3075, only the manual CFA was updated)
+	{
+		$browserver = 3;
+	} else if(strstr($ua, "1.7567"))//1.7567 v4096/7.1.0-16
+	{
+		$browserver = 4;
+	} else if(strstr($ua, "1.7585"))//1.7585 v5121/9.5.0-23
+	{
+		$browserver = 5;
+	} else if(strstr($ua, "1.7610"))//1.7610 v6149/9.9.0-26
+	{
+		$browserver = 6;
+	}
+	else if(strstr($ua, "1.7616"))//1.7616 v7168/10.2.0-28
+	{
+		$browserver = 7;
+	}
+
+	//new3ds: Mobile-NintendoBrowser-version titlever sysver
+	if(strstr($ua, "1.0.9934"))//1.0.9934 v10 9.0.0-20
+	{
+		$browserver = 0x80;
+	}
+	else if(strstr($ua, "1.1.9996"))//1.1.9996 v1027 9.3.0-21
+	{
+		$browserver = 0x81;
+	}
+	else if(strstr($ua, "1.2.10085"))//1.2.10085 v2051 9.6.0-24
+	{
+		$browserver = 0x82;
+	}
+	else if(strstr($ua, "1.3.10126"))//1.3.10126 v3077 9.9.0-26
+	{
+		$browserver = 0x83;
+	}
+	else if(strstr($ua, "1.4.10138"))//1.4.10138 v4096 10.2.0-28
+	{
+		$browserver = 0x84;
+	}
+	else if(strstr($ua, "1.5.10143"))//1.5.10143 v5121 10.4.0-29
+	{
+		$browserver = 0x85;
+	}
 }
 
 if($browserver == -1)
 {
-	echo "This browser version is not recognized.\n";
+	echo "This browser version is not recognized/supported by 3ds_browserhax_common. Whether this also applies to the exploit you're using is a seperate matter. See the 3ds_browserhax_common repo README if you just want to see if the browser exploit crashes.\n";
 	//error_log("3dsbrowserhax_common.php: BROWSERVER NOT RECOGNIZED.");
 	exit;
 }
 
-if(!($browserver>=1 && $browserver<=7) && !(($browserver & 0x80) && ($browserver>=0x80 && $browserver<=0x84)))
+if(!($browserver>=1 && $browserver<=7) && !(($browserver & 0x80) && ($browserver>=0x80 && $browserver<=0x85)))
 {
 	echo "This browser version is not supported.\n";
 	//error_log("3dsbrowserhax_common.php: BROWSERVER NOT SUPPORTED.");
@@ -993,6 +1005,10 @@ else if($browserver == 0x84)
 	$ROP_LDR_R0_FROMR0_SHIFTR1 = $OSSCRO_MAPADR+0x00102834;
 
 	$ROP_STMR0_R0PC = $PEERCRO_MAPADR+0x0001ef51;
+}
+else if($browserver == 0x85)
+{
+	require_once("3dsbrowserhax_rop_skater_usaeurjpn_v5121.php");
 }
 
 if($browserver == 3 || $browserver == 4)$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2f9f0;
