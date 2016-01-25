@@ -185,22 +185,58 @@ blx checkerror_triggercrash
 ldr r0, [sp, #12]
 blx svcCloseHandle
 
-ldr r0, =(0x6500000+0x14000000+0x1000) @ .text+0x1000
+ldr r0, =(0x6500000+0x14000000)
+str r0, [sp, #44]
+mov r0, #0
+str r0, [sp, #48]
+
+menutextphys_search: @ v10.4 loader-process in FIRM added "randomization" for the codebin physmem of certain processes, including Home Menu.
+ldr r0, [sp, #44]
 ldr r5, =0x1f510000
-ldr r6, =0x1f510000+0x5000-0x4
-ldr r4, [r6]
+
 mov r1, r5
-ldr r2, =0x5000
-bl gxcmd4 @ Copy 0x5000-bytes of Home Menu .text+0x1000 to VRAM+0x510000.
+ldr r2, =0xf0000
+mov r6, r1
+add r6, r6, r2
+sub r6, r6, #4
+ldr r4, [r6]
+bl gxcmd4 @ Copy <above size> of Home Menu .text to <outbuf>. 0x10000-bytes is the lowest possible size of a chunk with the physmem-randomization.
 
 waitcodevramcpy_finish: @ Wait for the above copy to completely finish.
 ldr r0, [r6]
 cmp r0, r4
 beq waitcodevramcpy_finish
 
+menutextphys_search_checkword:
+ldr r3, =0xeb000007 @ Check whether section+0 matches homemenu .text+0.
+ldr r1, [r5]
+cmp r1, r3
+beq menutextphys_search_done
+
+ldr r2, =0x10000
+ldr r0, [sp, #44]
+add r0, r0, r2
+str r0, [sp, #44]
+
+//ldr r0, =0x00204BBC
+ldr r0, =0xf0000
+ldr r1, [sp, #48]
+add r1, r1, r2
+str r1, [sp, #48]
+add r5, r5, r2
+cmp r1, r0
+//bcc menutextphys_search//Looping with gxcmd4 here is useless since homemenu takeover will fail due to .text not being overwritten in time.
+bcc menutextphys_search_checkword
+
+ldr r3, =0xa819f288 @ Trigger crash on failure.
+str r3, [r3]
+
+menutextphys_search_done:
 @ Begin auto-locating the target code for homemenu takeover.
 ldr r4, =0x00101000
 mov r0, r4
+ldr r2, =0x1000
+add r5, r5, r2
 mov r1, r5
 
 ldr r2, =0xef000003 @ Locate the "svc 0x03" instruction, which is the function right before main().
@@ -271,7 +307,7 @@ sub r0, r0, r4
 mov r3, r0
 
 ldr r0, =0x1000
-ldr r1, =(0x6500000+0x14000000) @ .text+<above offset>
+ldr r1, [sp, #44] @ .text+<above offset>
 add r1, r1, r3
 add r1, r1, r0
 add r0, r0, r7
