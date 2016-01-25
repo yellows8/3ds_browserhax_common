@@ -81,6 +81,10 @@ ldr r1, =0x10000
 ldr r3, [r7, #0x20]
 blx r3
 
+ldr r0, =0x1ED02A04
+ldr r1, =0x0100A5FF
+bl gsp_writereg @ Set sub-screen colorfill to orange.
+
 @ Copy the menuropbin via the GPU.
 
 ldrb r2, [sp, #16]
@@ -534,6 +538,56 @@ bne GSPGPU_ReleaseRight_end
 ldr r0, [r4, #4]
 
 GSPGPU_ReleaseRight_end:
+pop {r4, pc}
+.pool
+
+gsp_writereg: @ Write an u32 to a GPU reg. r0 = regaddr, r1 = u32 val. regaddr can be IO vaddr, or relative to 0x1EB00000.
+push {lr}
+sub sp, sp, #4
+
+ldr r3, =0x1EB00000
+cmp r0, r3
+blt gsp_writereg_start
+sub r0, r0, r3
+
+gsp_writereg_start:
+str r1, [sp, #0]
+
+mov r1, sp
+mov r2, #4
+bl GSPGPU_WriteHWRegs
+
+add sp, sp, #4
+pop {pc}
+.pool
+
+GSPGPU_WriteHWRegs: @ r0=gpuregadr, r1=buf*, r2=size
+push {r0, r1, r2, r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, =0x00010082
+str r1, [r4, #0]
+ldr r1, [sp, #0]
+str r1, [r4, #4]
+ldr r1, [sp, #8]
+str r1, [r4, #8]
+lsl r1, r1, #14
+mov r2, #2
+orr r1, r1, r2
+str r1, [r4, #12]
+ldr r1, [sp, #4]
+str r1, [r4, #16]
+
+ldr r0, [r7, #0x58]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne GSPGPU_WriteHWRegs_end
+ldr r0, [r4, #4]
+
+GSPGPU_WriteHWRegs_end:
+add sp, sp, #12
 pop {r4, pc}
 .pool
 

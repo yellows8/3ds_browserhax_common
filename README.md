@@ -64,15 +64,22 @@ You can have the browser auto-load the exploit page if you return to Home Menu f
 # Homebrew Launcher
 This codebase is mainly intended for loading an arbitrary arm11code payload, at a vaddr which varies per title/version. Homebrew-launcher can be booted via this arm11code payload, with the loader included with this repo. The spider version of this loader automatically locates the required addresses and such on-the-fly. The New3DS web-browser is supported by this too, without anything that's system-version/region specific(besides the data loaded from the payload). The loader determines whether it's running under spider or SKATER by checking the New3DS flag loaded via NS(command 0x01020000 http://3dbrew.org/wiki/NS_and_APT_Services). Therefore, do not use this payload on Old3DS outside of spider, and on New3DS do not use this loader outside of SKATER.
 
-In some kinda rare(?) cases on Old3DS, a crash/"hang" may occur with a gray or white bottom-screen. If it ever returns to Home Menu when the bottom-screen was gray, then a reboot is *required*.
+In some cases on Old3DS, a crash/"hang" may occur with an orange or white bottom-screen. If it ever returns to Home Menu when the bottom-screen was orange, then a reboot is *required*.
 
 This loader will initially try to load the hblauncher ropbin payload from SD-card "/browserhax_hblauncher_ropbin_payload.bin". This is separate from the otherapp payload.  
 If loading from SD fails, this loader will then automatically detect the required payload, then download it with HTTP. This latter method is highly recommended(unless this method doesn't work well for the user): with a "/boot.3dsx" on SD card, there's zero other setup/user-input needed once the browserhax is triggered successfully.  
 When loading the payload with both of the above methods fails, a crash will be triggered.
 
-The entire time the loader is running, prior to the menurop, the bottom-screen color is set to gray. If it stays like this with top-screen gfx still being updated by the browser for a while, in particular with http-download, you may have to reboot the system due to network issues.
+Hanging at an gray-bottom-screen means \*hax payload loading failed, normally this is due to network issues(you should reboot your system when this happens).
 
 The loader for Old3DS runs actual native code under the context of Home Menu, if you really want to run your own code under Home Menu you can modify that code in the loader. This code runs very early in the Home Menu process boot.
+
+# Screen colors
+When using browserhax the bottom-screen colorfill will be set to various colors in the following order:
+* 1) Yellow: Browser ROP started running, this also means the *exploit* *itself* worked fine.
+* 2) Gray: This colorfill is set right before jumping to the initial arm11code binary, for running native code for the first time.
+* 3) Orange: This is set after the \*hax payload was successfully loaded into memory via HTTP/SD.
+* 4) White: This is set by the \*hax payload itself when it starts running.
 
 # Credits
 * megazig for helping with APT(for APT stuff once the Home Menu code in the loader starts running) during the initial + eventually successful Old3DS Home Menu takeover implementation.
