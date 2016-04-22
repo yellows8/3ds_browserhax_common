@@ -5,7 +5,7 @@ The versions below are listed in the following format: browserver titlever sysve
 
 Also note that with the system web-browser, only the last number in the system-version(X.X.X-NUPVER) actually matters for the browser version. Loading arm11code for pre-v5.0 Old3DS browser versions is only supported with pre-v5.0 NATIVE_FIRM. For example, arm11code loading wouldn't work if the system-version is X.Y.Z-NUPVER, where NUPVER is less than 11 and "X.Y.Z" is at least "5.0.0".
 
-Only the USA, EUR, and JPN browsers are supported: the main ExeFS codebin are all identical for these regions, unlike the other regions.
+Only the USA, EUR, and JPN browsers are supported(with the exception listed below): the main ExeFS codebin are all identical for these regions, unlike the other regions.
 
 Old3DS system Internet Browser(spider) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions_2):
 * 1.7455 v1024/2.1.0-4..3.0.0-6
@@ -20,7 +20,7 @@ New3DS system Internet Browser(SKATER) (see also http://3dbrew.org/wiki/Internet
 * 1.0.9934 v10 9.0.0-20..9.2.0-20
 * 1.1.9996 v1027 9.3.0-21..9.5.0-23
 * 1.2.10085 v2051 9.6.0-24..9.8.0-25
-* 1.3.10126 v3077 9.9.0-26..10.1.0-27
+* 1.3.10126 v3077 9.9.0-26..10.1.0-27 KOR is also supported for this.
 * 1.4.10138 v4096 10.2.0-28..10.3.0-28
 * 1.5.10143 v5121 10.4.0-29
 
