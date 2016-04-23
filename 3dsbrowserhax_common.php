@@ -91,6 +91,10 @@ if(!isset($browserver))
 	{
 		$browserver = 0x83;
 	}
+	else if(strstr($ua, "1.3.10138.KR"))//1.3.10126.KR v4096
+	{
+		$browserver = 0x87;
+	}
 	else if(strstr($ua, "1.4.10138"))//1.4.10138 v4096 10.2.0-28
 	{
 		$browserver = 0x84;
@@ -108,7 +112,7 @@ if($browserver == -1)
 	exit;
 }
 
-if(!($browserver>=1 && $browserver<=7) && !(($browserver & 0x80) && ($browserver>=0x80 && $browserver<=0x86)))
+if(!($browserver>=1 && $browserver<=7) && !(($browserver & 0x80) && ($browserver>=0x80 && $browserver<=0x87)))
 {
 	echo "This browser version is not supported.\n";
 	//error_log("3dsbrowserhax_common.php: BROWSERVER NOT SUPPORTED.");
@@ -1017,6 +1021,10 @@ else if($browserver == 0x85)
 else if($browserver == 0x86)
 {
     require_once("3dsbrowserhax_rop_skater_kor_v3077.php");
+}
+else if($browserver == 0x87)
+{
+    require_once("3dsbrowserhax_rop_skater_kor_v4096.php");
 }
 
 if($browserver == 3 || $browserver == 4)$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2f9f0;
