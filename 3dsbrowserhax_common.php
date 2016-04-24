@@ -91,7 +91,7 @@ if(!isset($browserver))
 	{
 		$browserver = 0x83;
 	}
-	else if(strstr($ua, "1.3.10138.KR"))//1.3.10126.KR v4096
+	else if(strstr($ua, "1.4.10138.KR"))//1.4.10126.KR v4096
 	{
 		$browserver = 0x87;
 	}
@@ -99,7 +99,7 @@ if(!isset($browserver))
 	{
 		$browserver = 0x84;
 	}
-	else if(strstr($ua, "1.3.10143.KR"))//1.3.10126.KR v5121
+	else if(strstr($ua, "1.5.10143.KR"))//1.5.10126.KR v5121
 	{
 		$browserver = 0x88;
 	}
