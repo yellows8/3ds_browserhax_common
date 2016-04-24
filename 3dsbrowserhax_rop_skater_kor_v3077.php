@@ -1,6 +1,5 @@
 <?php
 $CODEBLK_ENDADR = ((0x00100000 + 0x00277000 + 0x00065000 + 0x0000A000 + 0x00045920) + 0xfff) & ~0xfff;
-
 $OSSCRO_HEAPADR = 0x08133000;
 $WEBKITCRO_HEAPADR = 0x083ff000;
 $PEERCRO_HEAPADR = 0x0831a000;
@@ -27,8 +26,6 @@ $svcGetProcessId = 0x0026c05c;
 $svcSendSyncRequest = 0x001eb0ec;
 $svcControlMemory = 0x0026390c;
 $svcSleepThread = 0x002d9104;
-$svcExitProcess = 0x002613e8;
-
 
 $GXLOW_CMD4 = 0x002a28c8;
 $GSPGPU_SERVHANDLEADR = 0x003e43d0;
