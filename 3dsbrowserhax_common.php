@@ -45,33 +45,37 @@ if(!isset($browserver))
 	//old3ds: browserver titlever sysver
 	if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2 (not actually supported)
 	{
-		$browserver = 0;
+		$browserver = 0x0;
 	} else if(strstr($ua, "1.7455"))//1.7455 v1024/2.1.0-4
 	{
-		$browserver = 1;
+		$browserver = 0x1;
 	} else if(strstr($ua, "1.7498"))//1.7498 v2050/4.0.0-7
 	{
-		$browserver = 2;
+		$browserver = 0x2;
 	} else if(strstr($ua, "1.7552"))//1.7552 v3075/5.0.0-11 / v3088/7.0.0-13 (v3088 main ncch is the same as v3075, only the manual CFA was updated)
 	{
-		$browserver = 3;
+		$browserver = 0x3;
 	} else if(strstr($ua, "1.7567"))//1.7567 v4096/7.1.0-16
 	{
-		$browserver = 4;
+		$browserver = 0x4;
 	} else if(strstr($ua, "1.7585"))//1.7585 v5121/9.5.0-23
 	{
-		$browserver = 5;
+		$browserver = 0x5;
 	} else if(strstr($ua, "1.7610"))//1.7610 v6149/9.9.0-26
 	{
-		$browserver = 6;
+		$browserver = 0x6;
 	}
 	else if(strstr($ua, "1.7616.KR"))//1.7616.KR v7168/10.2.0-28
 	{
-		$browserver = 11;
+		$browserver = 0x57;
 	}
 	else if(strstr($ua, "1.7616"))//1.7616 v7168/10.2.0-28
 	{
-		$browserver = 7;
+		$browserver = 0x7;
+	}
+	else if(strstr($ua, "1.7625"))//1.7625 v9232/10.7.0-32 TODO: Check on v10.6.
+	{
+		$browserver = 0x9;
 	}
 
 	//new3ds: Mobile-NintendoBrowser-version titlever sysver
@@ -89,7 +93,7 @@ if(!isset($browserver))
 	}
 	else if(strstr($ua, "1.3.10126.KR"))//1.3.10126.KR v3077
 	{
-		$browserver = 0x86;
+		$browserver = 0xD3;
 	}
 	else if(strstr($ua, "1.3.10126"))//1.3.10126 v3077 9.9.0-26
 	{
@@ -97,7 +101,7 @@ if(!isset($browserver))
 	}
 	else if(strstr($ua, "1.4.10138.KR"))//1.4.10126.KR v4096
 	{
-		$browserver = 0x87;
+		$browserver = 0xD4;
 	}
 	else if(strstr($ua, "1.4.10138"))//1.4.10138 v4096 10.2.0-28
 	{
@@ -105,7 +109,7 @@ if(!isset($browserver))
 	}
 	else if(strstr($ua, "1.5.10143.KR"))//1.5.10126.KR v5121
 	{
-		$browserver = 0x88;
+		$browserver = 0xD5;
 	}
 	else if(strstr($ua, "1.5.10143"))//1.5.10143 v5121 10.4.0-29
 	{
@@ -120,7 +124,8 @@ if($browserver == -1)
 	exit;
 }
 
-if(!($browserver>=1 && $browserver<=11) && !(($browserver & 0x80) && ($browserver>=0x80 && $browserver<=0x88)))
+$browserver_actualver = $browserver & 0xF;
+if(!($browserver_actualver>=0x1 && $browserver_actualver<=0x9 && (($browserver & 0x80) == 0)) && !(($browserver & 0x80) && ($browserver_actualver>=0x0 && $browserver_actualver<=0x85)))
 {
 	echo "This browser version is not supported.\n";
 	//error_log("3dsbrowserhax_common.php: BROWSERVER NOT SUPPORTED.");
@@ -638,11 +643,15 @@ else if($browserver == 6)
 
 	$ROP_snprintf = $OSSCRO_MAPADR+0x3c0-0x4;
 }
-else if($browserver == 7)
+else if($browserver == 0x7)
 {
 	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v7168.php");
 }
-else if($browserver == 11)
+else if($browserver == 0x9)
+{
+	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v9232.php");
+}
+else if($browserver == 0x57)
 {
 	require_once("3dsbrowserhax_rop_spider_kor_v7168.php");
 }
@@ -1030,15 +1039,15 @@ else if($browserver == 0x85)
 {
 	require_once("3dsbrowserhax_rop_skater_usaeurjpn_v5121.php");
 }
-else if($browserver == 0x86)
+else if($browserver == 0xD3)
 {
     require_once("3dsbrowserhax_rop_skater_kor_v3077.php");
 }
-else if($browserver == 0x87)
+else if($browserver == 0xD4)
 {
     require_once("3dsbrowserhax_rop_skater_kor_v4096.php");
 }
-else if($browserver == 0x88)
+else if($browserver == 0xD5)
 {
     require_once("3dsbrowserhax_rop_skater_kor_v5121.php");
 }
