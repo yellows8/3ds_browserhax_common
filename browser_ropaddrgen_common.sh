@@ -23,9 +23,9 @@ if [ $# -ge 5 ]; then
 	bsssize=$(grep -h "Code bss size" $1/00*.info | cut "-d:" -f2 | tr -d " ")
 	echo "\$CODEBLK_ENDADR = ((0x00100000 + $textmaxsize + $romaxsize + $datamaxsize + ${bsssize}) + 0xfff) & ~0xfff;"
 
-	physaddr=$(ctrclient-yls8 --serveradr=$serveradr "--customcmd=getprocinfo:addrconv $procname 0x08000000" | grep Output | cut "-d " -f2)
+	physaddr=$(3dshaxclient --serveradr=$serveradr "--customcmd=getprocinfo:addrconv $procname 0x08000000" | grep Output | cut "-d " -f2)
 	memdump_path=${procname}_x08000000.bin
-	ctrclient-yls8 --serveradr=$serveradr "--customcmd=readmem:11usr=$procname 0x08000000 0x800000 @$memdump_path" > ${procname}_x08000000_toolstdout
+	3dshaxclient --serveradr=$serveradr "--customcmd=readmem:11usr=$procname 0x08000000 0x800000 @$memdump_path" > ${procname}_x08000000_toolstdout
 	ropgadget_patternfinder $memdump_path --patterntype=datacmp --patterndata=$(xxd -l 32 -p $crodir/oss.cro) --patternsha256size=0x20 --baseaddr=0x08000000 "--plainout=\$OSSCRO_HEAPADR = " "--plainsuffix=;"
 	ropgadget_patternfinder $memdump_path --patterntype=datacmp --patterndata=$(xxd -l 32 -p $crodir/webkit.cro) --patternsha256size=0x20 --baseaddr=0x08000000 "--plainout=\$WEBKITCRO_HEAPADR = " "--plainsuffix=;"
 	if [[ -f $crodir/peer.cro ]]; then
