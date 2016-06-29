@@ -115,7 +115,7 @@ if(!isset($browserver))
 	{
 		$browserver = 0x85;
 	}
-	else if(strstr($ua, "1.5.10143"))//1.7.10150  v7184 10.7.0-32 TODO: Add the version from the UA for v10.6 if it differs.
+	else if(strstr($ua, "1.7.10150"))//1.7.10150 v7184 10.7.0-32 TODO: Add the version from the UA for v10.6 if it differs.
 	{
 		$browserver = 0x86;
 	}
