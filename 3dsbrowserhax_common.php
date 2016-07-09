@@ -42,6 +42,8 @@ if(!isset($browserver))
 {
 	$browserver = -1;
 
+	//v10.6/v10.7 are detected as the same browserver here because there's basically no difference between them for ROP-addrs and such.
+
 	//old3ds: browserver titlever sysver
 	if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2 (not actually supported)
 	{
@@ -73,7 +75,7 @@ if(!isset($browserver))
 	{
 		$browserver = 0x7;
 	}
-	else if(strstr($ua, "1.7625"))//1.7625 v9232/10.7.0-32 TODO: Add the version from the UA for v10.6 if it differs.
+	else if(strstr($ua, "1.7622") || strstr($ua, "1.7625"))//1.7622 v8192/10.6.0-31. 1.7625 v9232/10.7.0-32.
 	{
 		$browserver = 0x8;
 	}
