@@ -38,11 +38,18 @@ if(isset($_REQUEST['browserver']))
 	$browserver = intval($_REQUEST['browserver'], 16);
 }
 
+$browserver_regionbitmask = 0x0;
+
 if(!isset($browserver))
 {
 	$browserver = -1;
 
 	//v10.6/v10.7 are detected as the same browserver here because there's basically no difference between them for ROP-addrs and such.
+
+	if(strstr($ua, ".KR"))
+	{
+		$browserver_regionbitmask = 0x50;
+	}
 
 	//old3ds: browserver titlever sysver
 	if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2 (not actually supported)
@@ -67,10 +74,6 @@ if(!isset($browserver))
 	{
 		$browserver = 0x6;
 	}
-	else if(strstr($ua, "1.7616.KR"))//1.7616.KR v7168/10.2.0-28
-	{
-		$browserver = 0x57;
-	}
 	else if(strstr($ua, "1.7616"))//1.7616 v7168/10.2.0-28
 	{
 		$browserver = 0x7;
@@ -93,25 +96,13 @@ if(!isset($browserver))
 	{
 		$browserver = 0x82;
 	}
-	else if(strstr($ua, "1.3.10126.KR"))//1.3.10126.KR v3077
-	{
-		$browserver = 0xD3;
-	}
 	else if(strstr($ua, "1.3.10126"))//1.3.10126 v3077 9.9.0-26
 	{
 		$browserver = 0x83;
 	}
-	else if(strstr($ua, "1.4.10138.KR"))//1.4.10126.KR v4096
-	{
-		$browserver = 0xD4;
-	}
 	else if(strstr($ua, "1.4.10138"))//1.4.10138 v4096 10.2.0-28
 	{
 		$browserver = 0x84;
-	}
-	else if(strstr($ua, "1.5.10143.KR"))//1.5.10126.KR v5121
-	{
-		$browserver = 0xD5;
 	}
 	else if(strstr($ua, "1.5.10143"))//1.5.10143 v5121 10.4.0-29
 	{
@@ -129,6 +120,8 @@ if($browserver == -1)
 	//error_log("3dsbrowserhax_common.php: BROWSERVER NOT RECOGNIZED.");
 	exit;
 }
+
+$browserver |= $browserver_regionbitmask;
 
 $browserver_actualver = $browserver & 0xF;
 if(!($browserver_actualver>=0x1 && $browserver_actualver<=0x8 && (($browserver & 0x80) == 0)) && !(($browserver & 0x80) && ($browserver_actualver>=0x0 && $browserver_actualver<=0x86)))
@@ -657,7 +650,7 @@ else if($browserver == 0x8)
 {
 	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v8192.php");
 }
-else if($browserver == 0x57)
+else if($browserver == 0x57)//1.7616.KR v7168/10.2.0-28
 {
 	require_once("3dsbrowserhax_rop_spider_kor_v7168.php");
 }
@@ -1049,17 +1042,25 @@ else if($browserver == 0x86)
 {
 	require_once("3dsbrowserhax_rop_skater_usaeurjpn_v6144.php");
 }
-else if($browserver == 0xD3)
+else if($browserver == 0xD3)//1.3.10126.KR v3077
 {
     require_once("3dsbrowserhax_rop_skater_kor_v3077.php");
 }
-else if($browserver == 0xD4)
+else if($browserver == 0xD4)//1.4.10126.KR v4096
 {
     require_once("3dsbrowserhax_rop_skater_kor_v4096.php");
 }
-else if($browserver == 0xD5)
+else if($browserver == 0xD5)//1.5.10126.KR v5121
 {
     require_once("3dsbrowserhax_rop_skater_kor_v5121.php");
+}
+else if($browserver == 0xD6)
+{
+    require_once("3dsbrowserhax_rop_skater_kor_v7184.php");
+}
+else
+{
+	die("Unsupported browserver / region.");
 }
 
 if($browserver == 3 || $browserver == 4)$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2f9f0;
