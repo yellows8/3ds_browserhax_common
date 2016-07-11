@@ -46,7 +46,11 @@ if(!isset($browserver))
 
 	//v10.6/v10.7 are detected as the same browserver here because there's basically no difference between them for ROP-addrs and such.
 
-	if(strstr($ua, ".KR"))
+	if(strstr($ua, ".CN"))
+	{
+		$browserver_regionbitmask = 0x40;
+	}
+	else if(strstr($ua, ".KR"))
 	{
 		$browserver_regionbitmask = 0x50;
 	}
@@ -649,6 +653,10 @@ else if($browserver == 0x7)
 else if($browserver == 0x8)
 {
 	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v8192.php");
+}
+else if($browserver == 0x48)//1.7622.CN v8192/10.6.0-31. 1.7625.CN v9232/10.7.0-32.
+{
+	require_once("3dsbrowserhax_rop_spider_chn_v8192.php");
 }
 else if($browserver == 0x52)//1.7538.KR v0/4.2.0-9
 {
