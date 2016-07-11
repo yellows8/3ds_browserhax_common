@@ -54,6 +54,10 @@ if(!isset($browserver))
 	{
 		$browserver_regionbitmask = 0x50;
 	}
+	else if(strstr($ua, ".TW"))
+	{
+		$browserver_regionbitmask = 0x60;
+	}
 
 	//old3ds: browserver titlever sysver
 	if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2 (not actually supported)
@@ -685,6 +689,10 @@ else if($browserver == 0x57)//1.7616.KR v7168/10.2.0-28
 else if($browserver == 0x58)//1.7622.KR v8192/10.6.0-31. 1.7625.KR v9232/10.7.0-32.
 {
 	require_once("3dsbrowserhax_rop_spider_kor_v8192.php");
+}
+else if($browserver == 0x68)//1.7622.TW v8192/10.6.0-31. 1.7625.TW v9232/10.7.0-32.
+{
+	require_once("3dsbrowserhax_rop_spider_twn_v8192.php");
 }
 else if($browserver == 0x80)//new3ds
 {
