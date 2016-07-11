@@ -654,6 +654,10 @@ else if($browserver == 0x57)//1.7616.KR v7168/10.2.0-28
 {
 	require_once("3dsbrowserhax_rop_spider_kor_v7168.php");
 }
+else if($browserver == 0x58)//1.7625.KR v9232/10.7.0-32
+{
+	require_once("3dsbrowserhax_rop_spider_kor_v9232.php");
+}
 else if($browserver == 0x80)//new3ds
 {
 	$CODEBLK_ENDADR = 0x00422000;
