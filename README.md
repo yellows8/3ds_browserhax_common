@@ -15,7 +15,7 @@ Old3DS system Internet Browser(spider) (see also http://3dbrew.org/wiki/Internet
 * 1.7585 v5121/9.5.0-23..9.8.0-25
 * 1.7610 v6149/9.9.0-26..10.1.0-27
 * 1.7616 v7168/10.2.0-28..10.5.0-30 KOR is also supported for this.
-* 1.7622 v8192/10.6.0-31 KOR is "supported" for this but it's not tested.
+* 1.7622 v8192/10.6.0-31 KOR is also supported for this.
 * 1.7625 v9232/10.7.0-32 KOR is also supported for this.
 
 New3DS system Internet Browser(SKATER) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions):
