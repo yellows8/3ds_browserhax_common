@@ -12,7 +12,7 @@ Note that for CHN the loader is broken(APT_PreloadLibraryApplet() returns 0xd860
 Old3DS system Internet Browser(spider) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions_2):
 * 1.7455 v1024/2.1.0-4..3.0.0-6
 * 1.7498 v2050/4.0.0-7..4.5.0-10
-* 1.7538 v0/4.2.0-9..4.5.0-10 This is the first version of the KOR browser. This is supported.
+* 1.7538 v0/4.2.0-9..4.5.0-10 This is the first version of the CHN+KOR (and probably TWN) browser. This is supported for CHN and KOR.
 * 1.7552 v3075/5.0.0-11 / v3088/7.0.0-13 (v3088 main ncch is the same as v3075, only the manual CFA was updated) (that is, 5.0.0-11..7.0.0-13)
 * 1.7567 v4096/7.1.0-16..9.5.0-22
 * 1.7585 v5121/9.5.0-23..9.8.0-25
