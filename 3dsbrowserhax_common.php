@@ -58,7 +58,7 @@ if(!isset($browserver))
 	} else if(strstr($ua, "1.7455"))//1.7455 v1024/2.1.0-4
 	{
 		$browserver = 0x1;
-	} else if(strstr($ua, "1.7498"))//1.7498 v2050/4.0.0-7
+	} else if(strstr($ua, "1.7498") || strstr($ua, "1.7538"))//USA/EUR/JPN 1.7498 v2050/4.0.0-7. 1.7538.KR v0/4.2.0-9(different from the v4.0 one).
 	{
 		$browserver = 0x2;
 	} else if(strstr($ua, "1.7552"))//1.7552 v3075/5.0.0-11 / v3088/7.0.0-13 (v3088 main ncch is the same as v3075, only the manual CFA was updated)
@@ -649,6 +649,10 @@ else if($browserver == 0x7)
 else if($browserver == 0x8)
 {
 	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v8192.php");
+}
+else if($browserver == 0x52)//1.7538.KR v0/4.2.0-9
+{
+	require_once("3dsbrowserhax_rop_spider_kor_v0.php");
 }
 else if($browserver == 0x56)//1.7610.KR v6149/9.9.0-26
 {
