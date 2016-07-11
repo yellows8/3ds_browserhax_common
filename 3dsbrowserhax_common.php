@@ -650,6 +650,10 @@ else if($browserver == 0x8)
 {
 	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v8192.php");
 }
+else if($browserver == 0x56)//1.7610.KR v6149/9.9.0-26
+{
+	require_once("3dsbrowserhax_rop_spider_kor_v6149.php");
+}
 else if($browserver == 0x57)//1.7616.KR v7168/10.2.0-28
 {
 	require_once("3dsbrowserhax_rop_spider_kor_v7168.php");
