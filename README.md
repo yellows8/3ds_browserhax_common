@@ -7,7 +7,7 @@ Also note that with the system web-browser, only the last number in the system-v
 
 Only the USA, EUR, and JPN browsers are supported(with the exception listed below): the main ExeFS codebin are all identical for these regions, unlike the other regions.
 
-Note that for CHN and TWN the loader is broken(APT_PreloadLibraryApplet() returns 0xd8609013 while launching Home Menu). In some cases with v9.9 TWN browser, allocating memory for the payload may fail via svcControlMemory(error 0xd86007f3).
+Note that for CHN and TWN the loader is broken(APT_PreloadLibraryApplet() returns 0xd8609013 while launching Home Menu).
 
 Old3DS system Internet Browser(spider) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions_2):
 * 1.7455 v1024/2.1.0-4..3.0.0-6
