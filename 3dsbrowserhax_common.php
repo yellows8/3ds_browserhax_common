@@ -690,6 +690,14 @@ else if($browserver == 0x58)//1.7622.KR v8192/10.6.0-31. 1.7625.KR v9232/10.7.0-
 {
 	require_once("3dsbrowserhax_rop_spider_kor_v8192.php");
 }
+else if($browserver == 0x66)//1.7610.TW v6149/9.9.0-26
+{
+	require_once("3dsbrowserhax_rop_spider_twn_v6149.php");
+}
+else if($browserver == 0x67)//1.7616.TW v7168/10.2.0-28
+{
+	require_once("3dsbrowserhax_rop_spider_twn_v7168.php");
+}
 else if($browserver == 0x68)//1.7622.TW v8192/10.6.0-31. 1.7625.TW v9232/10.7.0-32.
 {
 	require_once("3dsbrowserhax_rop_spider_twn_v8192.php");

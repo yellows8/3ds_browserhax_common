@@ -9,4 +9,4 @@ ropgadget_patternfinder $1/oss.cro --patterntype=sha256 --patterndata=e6e3314687
 echo -n -e "\n"
 ropgadget_patternfinder $1/peer.cro --baseaddr=0x7 --patterntype=sha256 --patterndata=6279580b19de16e57488d944436459e2dfbc8b35d704f371bc5fcec660aa4a6c --patternsha256size=0xe --stride=0x2 "--plainout=\$ROP_STMR0_R0PC = \$PEERCRO_MAPADR+" "--plainsuffix=;"
 
-echo -e "\n?>"
+echo -e -n "\n?>"
