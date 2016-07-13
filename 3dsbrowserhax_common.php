@@ -309,75 +309,20 @@ else if($browserver == 2)
 }
 else if($browserver == 3)
 {
-	$CODEBLK_ENDADR = 0x00440000;
-	$OSSCRO_HEAPADR = 0x083a5000;
-	$WEBKITCRO_HEAPADR = 0x08582000;
-	$APPHEAP_PHYSADDR = 0x25000000;
-	init_mapaddrs_cro();
-
 	if($DEVUNIT==0)
 	{
-		$STACKPIVOT_ADR = 0x001303d0;
-		$THROW_FATALERR = 0x00151b08;
-		$COND_THROWFATALERR = 0x00282488;
+		require_once("3dsbrowserhax_rop_spider_usaeurjpn_v3075_retail.php");
 
-		$ROP_POP_R0R6PC = 0x00105144;
-		$ROP_POP_R0R8PC = 0x00130ff8;
-		$ROP_POP_R0IPPC = 0x0018c9a4;
-		$ROP_POP_R0PC = 0x0010c320;
-		$ROP_POP_R1R5PC = 0x00101e98;
-
-		$ROP_STR_R1TOR0 = 0x001040d4;
-		$ROP_LDR_R0FROMR0 = 0x0011168c;
-		//$ROP_STR_R1_TOR0_SHIFTR2 = 0x003329f4;
-		$ROP_LDR_R0_FROMR0_SHIFTR1 = 0x00101218;
-		$ROP_ADDR0_TO_R1 = 0x0012bb98;
-
-		$ROP_LDMSTM_R5R4_R0R3 = 0x001d3ef0;
-
-		$ROP_WRITETHREADSTORAGEPTR_TOR4R5 = 0x0016882c;//if(r0!=0){r0 = <threadlocalstorageptr>; <write r0 to r4+4> *(((u32*)r4+8)++; r0=1} "pop {r4, pc}"
-
-		$ROP_STMR0_R0PC = 0x001bb4c4;
-
-		$SRVPORT_HANDLEADR = 0x003d968c;
-		$SRV_REFCNT = 0x003d8f64;
-		$srvpm_initialize = 0x0028c0f4;
-		$srv_shutdown = 0x0028c9c4;
-		$srv_GetServiceHandle = 0x0023c454;
-
-		$svcGetProcessId = 0x00100ca4;
-		$svcSendSyncRequest = 0x002443ec;
-		$svcControlMemory = 0x001431c0;
-		$svcSleepThread = 0x0010420c;
-
-		$GXLOW_CMD4 = 0x0011dd80;
-		$GSP_FLUSHDCACHE = 0x001914f8;
-		$GSP_WRITEHWREGS = 0x0011e188;//inr0=regadr inr1=bufptr inr2=bufsz
-		$GSPGPU_SERVHANDLEADR = 0x003da72c;
-
-		$IFile_Open = 0x0022fe44;
-		$IFile_Close = 0x001fdbc0;
-		$IFile_GetSize = 0x002074fc;
-		$IFile_Seek = 0x00151658;
-		$IFile_Read = 0x001686c0;
-		$IFile_Write = 0x00168748;
-
-		$FS_DELETEFILE = 0x001683a4;//r0=utf16* filepath
-
-		$FSFILEIPC_CLOSE = 0x0027ec40;
-		$FSFILEIPC_READ = 0x0027ebe8;//inr0=handle* inr1=transfercount* inr2/inr3=u64 offset insp0=databuf insp4=size
-		$FSFILEIPC_GETSIZE = 0x0027eccc;//inr0=handle* inr1=u64 out*
-
-		//$READ_EXEFSFILE = 0x0027b378;//"inr0=outbuf inr1=readsize inr2=archive lowpathtype inr3=archive lowpath data* insp0=archive lowpath datasize insp4=ptr to 8-byte exefs filename"
-		$OPENFILEDIRECTLY_WRAP = 0x0027b5e0;//inr0=fileouthandle* inr1=archiveid inr2=archive lowpath* inr3=file lowpath* (lowpath struct ptr: +0 = type, +4 = dataptr*, +8 = size)
-
-		$APT_PrepareToDoApplicationJump = 0x00299f98;
-		$APT_DoApplicationJump = 0x0029951c;
-
-		$ROP_snprintf = $OSSCRO_MAPADR+0x3c0-0x4;
+		//$ROP_WRITETHREADSTORAGEPTR_TOR4R5: if(r0!=0){r0 = <threadlocalstorageptr>; <write r0 to r4+4> *(((u32*)r4+8)++; r0=1} "pop {r4, pc}"
 	}
 	else
 	{
+		$CODEBLK_ENDADR = 0x00440000;
+		$OSSCRO_HEAPADR = 0x083a5000;
+		$WEBKITCRO_HEAPADR = 0x08582000;
+		$APPHEAP_PHYSADDR = 0x25000000;
+		init_mapaddrs_cro();
+
 		$STACKPIVOT_ADR = 0x00190060;
 		$THROW_FATALERR = 0x0017a2a8;
 		$COND_THROWFATALERR = 0x002822a0;
@@ -1111,7 +1056,7 @@ else
 	die("Unsupported browserver / region.");
 }
 
-if($browserver == 3 || $browserver == 4)$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2f9f0;
+if($browserver == 4)$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2f9f0;
 
 if($browserver < 3)
 {
@@ -1185,8 +1130,8 @@ else if($browserver == 0x81)//new3ds
 
 if($browserver < 0x80)
 {
-	if($browserver < 6)$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x190;
-	if($browserver < 6)$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x308;
+	if($browserver < 6 && $browserver!=0x3)$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x190;
+	if($browserver < 6 && $browserver!=0x3)$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x308;
 }
 else if($browserver >= 0x80)
 {
@@ -1211,7 +1156,7 @@ if($browserver>=0x80)
 $STACKPIVOT = genu32_unicode_jswrap($STACKPIVOT_ADR);
 $POPLRPC = $STACKPIVOT_ADR + 0x18;//"pop {lr}" "pop {pc}"
 
-if($browserver < 5)
+if($browserver < 5 && $browserver!=0x3)
 {
 	$POPPC = $STACKPIVOT_ADR + 0x1c;
 }
