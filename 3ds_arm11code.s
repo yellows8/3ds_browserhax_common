@@ -1098,6 +1098,7 @@ pop {r4, r5, pc}
 .pool
 
 @ Most of the HTTPC code here is from smashbroshax.
+@ r0 = handle*, r1 = cmd[1], r2 = cmd[2], r3 = cmdhdr.
 HTTPC_sendcmd:
 push {r0, r1, r2, r3, r4, lr}
 blx get_cmdbufptr
@@ -1166,6 +1167,11 @@ b HTTPC_sendcmd
 
 HTTPC_BeginRequest:
 ldr r3, =0x00090040
+b HTTPC_sendcmd
+.pool
+
+HTTPC_AddDefaultCert: @ r0=handle*, r1=ctxhandle, r2=certID
+ldr r3, =0x00250080
 b HTTPC_sendcmd
 .pool
 
@@ -1382,6 +1388,36 @@ beq HTTPC_GetResponseStatusCode_end
 str r1, [r2]
 
 HTTPC_GetResponseStatusCode_end:
+add sp, sp, #16
+pop {r4, pc}
+.pool
+
+HTTPC_AddTrustedRootCA: @ r0=handle*, r1=ctxhandle, r2=buf*, r3=bufsize
+push {r0, r1, r2, r3, r4, lr}
+blx get_cmdbufptr
+mov r4, r0
+
+ldr r1, =0x00240082
+str r1, [r4, #0]
+ldr r1, [sp, #4]
+str r1, [r4, #4]
+ldr r1, [sp, #12]
+str r1, [r4, #8]
+lsl r1, r1, #4
+mov r2, #0xa
+orr r1, r1, r2
+str r1, [r4, #12]
+ldr r2, [sp, #8]
+str r2, [r4, #16]
+
+ldr r0, [sp, #0]
+ldr r0, [r0]
+blx svcSendSyncRequest
+cmp r0, #0
+bne HTTPC_AddTrustedRootCA_end
+ldr r0, [r4, #4]
+
+HTTPC_AddTrustedRootCA_end:
 add sp, sp, #16
 pop {r4, pc}
 .pool
@@ -1681,8 +1717,10 @@ bl getregion
 add r1, sp, #0x20 @ output structure: +0 = NVer tidlow, +4 = CVer tidlow, +8 = regionid string(as a word, not ptr).
 blx getregion_entrydata
 
-adr r4, versionbin_filename @ Load NVer.
-str r4, [sp, #0x0]
+@ Load NVer.
+blx getaddr_versionbin_filename
+str r0, [sp, #0x0]
+
 mov r4, #0x16
 str r4, [sp, #0x4]
 add r4, sp, #0x10
@@ -1698,8 +1736,10 @@ bl read_romfs_file
 cmp r0, #0
 bne load_systemversion_exit
 
-adr r4, versionbin_filename @ Load CVer.
-str r4, [sp, #0x0]
+@ Load CVer.
+blx getaddr_versionbin_filename
+str r0, [sp, #0x0]
+
 mov r4, #0x16
 str r4, [sp, #0x4]
 add r4, sp, #0x18
@@ -1822,6 +1862,23 @@ bl HTTPC_AddRequestHeaderField @ r0=handle*, r1=ctxhandle, r2=headername*, r3=he
 cmp r0, #0
 bne http_do_request_close
 
+@ Add default rootCA cert for: "DigiCert High Assurance EV Root CA".
+add r0, sp, #16
+ldr r1, [sp, #20]
+mov r2, #0xB
+bl HTTPC_AddDefaultCert
+cmp r0, #0
+bne http_do_request_close
+
+blx getaddrsize_rootcacert_embed
+mov r2, r0
+mov r3, r1
+add r0, sp, #16
+ldr r1, [sp, #20]
+bl HTTPC_AddTrustedRootCA
+cmp r0, #0
+bne http_do_request_close
+
 add r0, sp, #16
 ldr r1, [sp, #20]
 bl HTTPC_BeginRequest
@@ -1912,6 +1969,80 @@ add sp, sp, #0x5c
 pop {r4, r5, r6, pc}
 .pool
 
+@ r0 = url*, r1 = cmpstr*
+@ Returns 0 when the first <length of cmpstr> from cmpstr matches url, otherwise returns non-zero.
+http_cmpurl:
+ldrb r2, [r0]
+ldrb r3, [r1]
+add r0, r0, #1
+add r1, r1, #1
+sub r2, r2, r3
+cmp r3, #0
+bne http_cmpurl_lpnext
+mov r2, #0
+b http_cmpurl_end
+
+http_cmpurl_lpnext:
+cmp r2, #0
+bne http_cmpurl
+
+http_cmpurl_end:
+mov r0, r2
+bx lr
+
+@ r0 = url*
+@ Override "http://" with "https://" if needed.
+http_override_url:
+push {r4, lr}
+sub sp, sp, #0x100
+mov r4, r0
+
+@ Only override the URL if it starts with the string from httpurl_smeagithubio.
+blx getaddr_httpurl_smeagithubio
+mov r1, r0
+
+mov r0, r4
+bl http_cmpurl
+cmp r0, #0
+bne http_override_url_end
+
+mov r0, r4
+add r0, r0, #4 @ src
+mov r1, sp
+add r1, r1, #5 @ dst
+http_override_url_cpylp:
+ldrb r3, [r0]
+strb r3, [r1]
+add r0, r0, #1
+add r1, r1, #1
+cmp r3, #0
+bne http_override_url_cpylp
+
+ldr r3, [r4]
+str r3, [sp]
+mov r3, #0x73 @ 's'
+mov r0, sp
+strb r3, [r0, #4]
+
+mov r2, #0x7f
+mov r0, sp
+mov r1, r4
+http_override_url_cpylp_out:
+ldrb r3, [r0]
+strb r3, [r1]
+add r0, r0, #1
+add r1, r1, #1
+sub r2, r2, #1
+cmp r3, #0
+beq http_override_url_end
+cmp r2, #0
+bne http_override_url_cpylp_out
+
+http_override_url_end:
+add sp, sp, #0x100
+pop {r4, pc}
+.pool
+
 http_download_payload: @ r0 = ptr where the payload allocbuf addr will be written, r1 = u32* payloadsize, r2 = new3ds_flag
 push {r4, r5, r6, lr}
 sub sp, sp, #0xd0
@@ -1932,6 +2063,9 @@ mov r3, #0
 bl http_do_request @ r0 = output, r1 = url, r2 = flag.
 cmp r0, #0
 bne http_download_payload_end
+
+add r0, sp, #0x50
+bl http_override_url
 
 @ Actual payload download.
 mov r0, r5
@@ -2110,6 +2244,10 @@ sdpayload_path:
 
 .align 2
 
+getaddr_versionbin_filename:
+adr r0, versionbin_filename
+bx lr
+
 versionbin_filename:
 .string16 "version.bin"
 
@@ -2143,7 +2281,7 @@ regionids_array:
 .align 2
 
 payloadurl_formatstr:
-.string "http://smea.mtheall.com/get_ropbin_payload.php?version=%s-%d-%d-%d-%d-%s" //Sample URL: http://smea.mtheall.com/get_payload.php?version=NEW-10-1-0-27-JPN
+.string "https://smea.mtheall.com/get_ropbin_payload.php?version=%s-%d-%d-%d-%d-%s" //Sample URL: http://smea.mtheall.com/get_payload.php?version=NEW-10-1-0-27-JPN
 payloadurl_formatstr_end:
 .align 2
 
@@ -2485,4 +2623,22 @@ menustub_end:
 getaddrs_menustub_end:
 adr r1, menustub_end
 bx lr
+
+getaddrsize_rootcacert_embed:
+adr r0, rootcacert_embed_start
+ldr r1, =0x496 @ Hard-coded since the .der can be unaligned.
+bx lr
+.pool
+
+getaddr_httpurl_smeagithubio:
+adr r0, httpurl_smeagithubio
+bx lr
+
+httpurl_smeagithubio:
+.string "http://smealum.github.io/"
+.align 2
+
+rootcacert_embed_start:
+.incbin "embed_rootca.der"
+.align 2
 
