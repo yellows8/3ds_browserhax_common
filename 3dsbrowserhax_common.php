@@ -60,7 +60,7 @@ if(!isset($browserver))
 	}
 
 	//old3ds: browserver titlever sysver
-	if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2 (not actually supported)
+	if(strstr($ua, "1.7412"))//1.7412 v6/2.0.0-2
 	{
 		$browserver = 0x0;
 	} else if(strstr($ua, "1.7455"))//1.7455 v1024/2.1.0-4
@@ -132,7 +132,7 @@ if($browserver == -1)
 $browserver |= $browserver_regionbitmask;
 
 $browserver_actualver = $browserver & 0xF;
-if(!($browserver_actualver>=0x1 && $browserver_actualver<=0x8 && (($browserver & 0x80) == 0)) && !(($browserver & 0x80) && ($browserver_actualver>=0x0 && $browserver_actualver<=0x86)))
+if(!($browserver_actualver>=0x0 && $browserver_actualver<=0x8 && (($browserver & 0x80) == 0)) && !(($browserver & 0x80) && ($browserver_actualver>=0x0 && $browserver_actualver<=0x86)))
 {
 	echo "This browser version is not supported.\n";
 	//error_log("3dsbrowserhax_common.php: BROWSERVER NOT SUPPORTED.");
@@ -161,19 +161,25 @@ if($ropchainselect == -1)
 	browserhaxcfg_handledefault();
 }
 
-if($browserver == 1)
+if($browserver == 0x0)
+{
+	//For <v5.0 NATIVE_FIRM: $APPHEAP_PHYSADDR = unknown;
+
+	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v6.php");
+}
+else if($browserver == 0x1)
 {
 	//For <v5.0 NATIVE_FIRM: $APPHEAP_PHYSADDR = 0x24cff000;
 
 	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v1024.php");
 }
-else if($browserver == 2)
+else if($browserver == 0x2)
 {
 	//For <v5.0 NATIVE_FIRM: $APPHEAP_PHYSADDR = 0x24d02000;
 
 	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v2050.php");
 }
-else if($browserver == 3)
+else if($browserver == 0x3)
 {
 	if($DEVUNIT==0)
 	{
@@ -242,7 +248,7 @@ else if($browserver == 3)
 		$OPENFILEDIRECTLY_WRAP = 0x0027b3f8;
 	}
 }
-else if($browserver == 4)
+else if($browserver == 0x4)
 {
 	$CODEBLK_ENDADR = 0x00440000;
 	$OSSCRO_HEAPADR = 0x083a5000;
@@ -309,7 +315,7 @@ else if($browserver == 4)
 
 	$ROP_snprintf = $OSSCRO_MAPADR+0x3c0-0x4;
 }
-else if($browserver == 5)
+else if($browserver == 0x5)
 {
 	$CODEBLK_ENDADR = 0x00440000;
 	$OSSCRO_HEAPADR = 0x083a5000;
@@ -378,7 +384,7 @@ else if($browserver == 5)
 
 	$ROP_snprintf = $OSSCRO_MAPADR+0x3c0-0x4;
 }
-else if($browserver == 6)
+else if($browserver == 0x6)
 {
 	$CODEBLK_ENDADR = ((0x00100000 + 0x00270000 + 0x00064000 + 0x00018000 + 0x00056830) + 0xfff) & ~0xfff;
 	$OSSCRO_HEAPADR = 0x083a5000;

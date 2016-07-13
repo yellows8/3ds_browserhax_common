@@ -3,27 +3,28 @@ This repo is for intended for any 3DS title which has some form of web browser. 
 # Supported titles and versions
 The versions below are listed in the following format: browserver titlever sysver. Which browserver(target title + version of the title) to use is automatically determined by checking the user-agent. Due to this, when accessing hax with this, the New3DS system web-browser must be set to use the normal user-agent, not the mobile user-agent(the mobile user-agent is the same for all versions).
 
-Also note that with the system web-browser, only the last number in the system-version(X.X.X-NUPVER) actually matters for the browser version. Loading arm11code for pre-v5.0 Old3DS browser versions is only supported with pre-v5.0 NATIVE_FIRM. For example, arm11code loading wouldn't work if the system-version is X.Y.Z-NUPVER, where NUPVER is less than 11 and "X.Y.Z" is at least "5.0.0".
+Also note that with the system web-browser, only the last number in the system-version(X.X.X-NUPVER) actually matters for the browser version. Loading arm11code with the Old3DS browser is only supported with >=v5.0 NATIVE_FIRM, if you want to use pre-v5.0 NATIVE_FIRM with this you would have to modify the source. Normally doing so isn't needed since the \*hax payloads don't support system-versions that old anyway.
 
 Only the USA, EUR, and JPN browsers are supported(with the exception listed below): the main ExeFS codebin are all identical for these regions, unlike the other regions.
 
 Note that for CHN and TWN the loader(with 3ds_arm11code_chntwn.s) is broken(the menustub fails to auto-locate APT_GetServHandle due to older homemenu/ctrsdk code).
 
 Old3DS system Internet Browser(spider) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions_2):
-* 1.7455 v1024/2.1.0-4..3.0.0-6
-* 1.7498 v2050/4.0.0-7..4.5.0-10
-* 1.7538 v0/4.2.0-9..4.5.0-10 This is the first version of the CHN+KOR (and probably TWN) browser. This is supported for CHN and KOR.
-* 1.7552 v3075/5.0.0-11 / v3088/7.0.0-13 (v3088 main ncch is the same as v3075, only the manual CFA was updated) (that is, 5.0.0-11..7.0.0-13)
-* 1.7567 v4096/7.1.0-16..9.5.0-22
-* 1.7585 v5121/9.5.0-23..9.8.0-25
-* 1.7610 v6149/9.9.0-26..10.1.0-27 CHN, KOR, and TWN are also supported for this.
-* 1.7616 v7168/10.2.0-28..10.5.0-30 CHN, KOR, and TWN are also supported for this.
-* 1.7622 v8192/10.6.0-31 CHN, KOR, and TWN are also supported for this.
-* 1.7625 v9232/10.7.0-32 CHN, KOR, and TWN are also supported for this. Handled the same way as 1.7622.
+* 1.7412 v6    2.0.0-2..2.1.0-3
+* 1.7455 v1024 2.1.0-4..3.0.0-6
+* 1.7498 v2050 4.0.0-7..4.5.0-10
+* 1.7538 v0    4.2.0-9..4.5.0-10 This is the first version of the CHN+KOR (and probably TWN) browser. This is supported for CHN and KOR.
+* 1.7552 v3075 5.0.0-11 / v3088/7.0.0-13 (v3088 main ncch is the same as v3075, only the manual CFA was updated) (that is, 5.0.0-11..7.0.0-13)
+* 1.7567 v4096 7.1.0-16..9.5.0-22
+* 1.7585 v5121 9.5.0-23..9.8.0-25
+* 1.7610 v6149 9.9.0-26..10.1.0-27 CHN, KOR, and TWN are also supported for this.
+* 1.7616 v7168 10.2.0-28..10.5.0-30 CHN, KOR, and TWN are also supported for this.
+* 1.7622 v8192 10.6.0-31 CHN, KOR, and TWN are also supported for this.
+* 1.7625 v9232 10.7.0-32 CHN, KOR, and TWN are also supported for this. Handled the same way as 1.7622.
 
 New3DS system Internet Browser(SKATER) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions):
-* 1.0.9934 v10 9.0.0-20..9.2.0-20
-* 1.1.9996 v1027 9.3.0-21..9.5.0-23
+* 1.0.9934 v10    9.0.0-20..9.2.0-20
+* 1.1.9996 v1027  9.3.0-21..9.5.0-23
 * 1.2.10085 v2051 9.6.0-24..9.8.0-25
 * 1.3.10126 v3077 9.9.0-26..10.1.0-27 KOR is also supported for this.
 * 1.4.10138 v4096 10.2.0-28..10.3.0-28 KOR is also supported for this.
