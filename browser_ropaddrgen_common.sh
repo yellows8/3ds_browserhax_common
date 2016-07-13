@@ -19,7 +19,7 @@ function getexport
 if [ $# -ge 5 ]; then
 	textmaxsize=$(grep -h "Code text max pages" $1/00*.info | cut "-d(" -f2 | cut "-d)" -f1)
 	romaxsize=$(grep -h "Code ro max pages" $1/00*.info | cut "-d(" -f2 | cut "-d)" -f1)
-	datamaxsize=$(grep -h "Code data max pages" $1/00*.info | cut "-d(" -f2 | cut "-d)" -f1)
+	datamaxsize=$(grep -h "Code data size" $1/00*.info | cut "-d:" -f2 | tr -s " " | cut "-d " -f2)
 	bsssize=$(grep -h "Code bss size" $1/00*.info | cut "-d:" -f2 | tr -d " ")
 	echo "\$CODEBLK_ENDADR = ((0x00100000 + $textmaxsize + $romaxsize + $datamaxsize + ${bsssize}) + 0xfff) & ~0xfff;"
 
