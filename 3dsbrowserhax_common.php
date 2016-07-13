@@ -239,73 +239,9 @@ if($browserver == 1)
 }
 else if($browserver == 2)
 {
-	$CODEBLK_ENDADR = 0x00401000;
-	$OSSCRO_HEAPADR = 0x08385000;
-	$WEBKITCRO_HEAPADR = 0x08558000;
-	$APPHEAP_PHYSADDR = 0x24d02000;
-	init_mapaddrs_cro();
+	//For <v5.0 NATIVE_FIRM: $APPHEAP_PHYSADDR = 0x24d02000;
 
-	$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2dd58;
-
-	$STACKPIVOT_ADR = 0x002d6a60;
-	$THROW_FATALERR = 0x0025e34c;
-	$COND_THROWFATALERR = 0x0013b284;
-
-	//$ROP_POP_R0R3PC = 0x002f9854;
-	$ROP_POP_R0R6PC = 0x00210b18;
-	$ROP_POP_R0R8PC = 0x00238674;
-	$ROP_POP_R0IPPC = 0x0022ce08;
-	$ROP_POP_R0PC = 0x002ad574;
-	$ROP_POP_R1R5PC = 0x001024f0;
-
-	$ROP_STR_R1TOR0 = 0x00141224;
-	$ROP_LDR_R0FROMR0 = 0x00179100;
-	//$ROP_STR_R1_TOR0_SHIFTR2 = 0x001ebad4;
-	$ROP_LDR_R0_FROMR0_SHIFTR1 = 0x00167730;
-	$ROP_ADDR0_TO_R1 = 0x0012d588;
-
-	$ROP_LDMSTM_R5R4_R0R3 = 0x00221d40;
-
-	$ROP_WRITETHREADSTORAGEPTR_TOR4R5 = 0x003549ec;//if(ip!=0){r0 = <threadlocalstorageptr>; <write r0 to r5+4> branch over a function-call} <func-call that can be skipped> *(((u32*)r5+8)++; r0=r4; "pop {r4, r5, r6, pc}"
-
-	$ROP_STMR0_R0PC = 0x0010012c;
-
-	//$ROP_CLOSEHANDLE = genu32_unicode(0x001569dc);
-
-	$SRVPORT_HANDLEADR = 0x003b644c;
-	$SRV_REFCNT = 0x003b5900;
-	$srvpm_initialize = 0x00147cd0;
-	$srv_shutdown = 0x00147b2c;
-	$srv_GetServiceHandle = 0x0025e384;
-
-	$svcGetProcessId = 0x002a1d00;
-	$svcSendSyncRequest = 0x0025e37c;
-	$svcControlMemory = 0x002d6adc;
-	$svcSleepThread = 0x002a513c;
-
-	$GXLOW_CMD4 = 0x002c62e4;
-	$GSP_FLUSHDCACHE = 0x00344b80;
-	$GSP_WRITEHWREGS = 0x002b8008;
-	$GSPGPU_SERVHANDLEADR = 0x003b643c;
-
-	$IFile_Open = 0x0025b0a4;
-	$IFile_Close = 0x0025b1c4;
-	$IFile_GetSize = 0x00303f44;
-	$IFile_Read = 0x002fc8e4;
-	$IFile_Write = 0x00311d90;
-
-	$FS_DELETEFILE = 0x00311ae8;
-
-	$FSFILEIPC_CLOSE = 0x001400e4;
-	$FSFILEIPC_READ = 0x00140088;
-	$FSFILEIPC_GETSIZE = 0x0014018c;
-
-	$OPENFILEDIRECTLY_WRAP = 0x0013d0e0;
-
-	$APT_PrepareToDoApplicationJump = 0x001552b8;
-	$APT_DoApplicationJump = 0x0015454c;
-
-	$ROP_snprintf = $OSSCRO_MAPADR+0x3c0-0x4;
+	require_once("3dsbrowserhax_rop_spider_usaeurjpn_v2050.php");
 }
 else if($browserver == 3)
 {
@@ -1058,7 +994,7 @@ else
 
 if($browserver == 4)$ROP_STR_R0TOR1 = $WEBKITCRO_MAPADR+0x2f9f0;
 
-if($browserver < 3)
+if($browserver < 3 && $browserver!=0x2)
 {
 	$WKC_FOPEN = $OSSCRO_MAPADR+0x680;
 	$WKC_FCLOSE = $OSSCRO_MAPADR+0x678;
@@ -1130,8 +1066,8 @@ else if($browserver == 0x81)//new3ds
 
 if($browserver < 0x80)
 {
-	if($browserver < 6 && $browserver!=0x3)$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x190;
-	if($browserver < 6 && $browserver!=0x3)$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x308;
+	if($browserver < 6 && $browserver!=0x3 && $browserver!=0x2)$ROP_MEMCPY = $WEBKITCRO_MAPADR+0x190;
+	if($browserver < 6 && $browserver!=0x3 && $browserver!=0x2)$ROP_MEMSETOTHER = $WEBKITCRO_MAPADR+0x308;
 }
 else if($browserver >= 0x80)
 {
@@ -1156,7 +1092,7 @@ if($browserver>=0x80)
 $STACKPIVOT = genu32_unicode_jswrap($STACKPIVOT_ADR);
 $POPLRPC = $STACKPIVOT_ADR + 0x18;//"pop {lr}" "pop {pc}"
 
-if($browserver < 5 && $browserver!=0x3)
+if($browserver < 5 && $browserver!=0x3 && $browserver!=0x2)
 {
 	$POPPC = $STACKPIVOT_ADR + 0x1c;
 }
@@ -1999,7 +1935,7 @@ function generateropchain_type1()
 
 function generateropchain_type2()
 {
-	global $ROPHEAP, $POPLRPC, $POPPC, $ROP_POP_R0R6PC, $ROP_POP_R1R5PC, $OSSCRO_HEAPADR, $OSSCRO_MAPADR, $APPHEAP_PHYSADDR, $svcControlMemory, $ROP_MEMSETOTHER, $IFile_Open, $IFile_Read, $IFile_Write, $IFile_Close, $IFile_GetSize, $IFile_Seek, $GSP_FLUSHDCACHE, $GXLOW_CMD4, $svcSleepThread, $THROW_FATALERR, $SRVPORT_HANDLEADR, $SRV_REFCNT, $srvpm_initialize, $srv_shutdown, $srv_GetServiceHandle, $GSP_WRITEHWREGS, $GSPGPU_SERVHANDLEADR, /*$APT_PrepareToDoApplicationJump,*/ $APT_DoApplicationJump, $arm11code_loadfromsd, $browserver, $FS_MOUNTSDMC, $ROP_snprintf, $ROP_curl_easy_cleanup, $ROP_curl_easy_init, $ROP_curl_easy_perform, $ROP_curl_easy_setopt;
+	global $ROPHEAP, $POPLRPC, $POPPC, $ROP_POP_R0R6PC, $ROP_POP_R1R5PC, $OSSCRO_HEAPADR, $OSSCRO_MAPADR, $APPHEAP_PHYSADDR, $svcControlMemory, $ROP_MEMSETOTHER, $IFile_Open, $IFile_Read, $IFile_Write, $IFile_Close, $IFile_GetSize, /*$IFile_Seek,*/ $GSP_FLUSHDCACHE, $GXLOW_CMD4, $svcSleepThread, $THROW_FATALERR, $SRVPORT_HANDLEADR, $SRV_REFCNT, $srvpm_initialize, $srv_shutdown, $srv_GetServiceHandle, $GSP_WRITEHWREGS, $GSPGPU_SERVHANDLEADR, /*$APT_PrepareToDoApplicationJump,*/ $APT_DoApplicationJump, $arm11code_loadfromsd, $browserver, $FS_MOUNTSDMC, $ROP_snprintf, $ROP_curl_easy_cleanup, $ROP_curl_easy_init, $ROP_curl_easy_perform, $ROP_curl_easy_setopt;
 
 	$LINEAR_TMPBUF = 0x18B40000;
 	$LINEAR_VADDRBASE = 0x14000000;
@@ -2130,7 +2066,7 @@ function generateropchain_type2()
 	$databuf[9] = $IFile_Open;
 	$databuf[10] = $IFile_Close;
 	$databuf[11] = $IFile_GetSize;
-	$databuf[12] = $IFile_Seek;
+	$databuf[12] = 0;//$IFile_Seek;
 	$databuf[13] = $IFile_Read;
 	$databuf[14] = $IFile_Write;
 	$databuf[15] = $GSP_WRITEHWREGS;
@@ -2210,7 +2146,7 @@ function generateropchain_type2()
 
 function generateropchain_type3()
 {
-	global $ROPHEAP, $POPLRPC, $POPPC, $ROP_POP_R0R6PC, $ROP_POP_R1R5PC, $ROP_MEMSETOTHER, $IFile_Open, $IFile_Read, $IFile_Write, $IFile_Close, $IFile_GetSize, $IFile_Seek, $THROW_FATALERR, $SRVPORT_HANDLEADR, $SRV_REFCNT, $srvpm_initialize, $srv_shutdown, $srv_GetServiceHandle, $READ_EXEFSFILE, $OPENFILEDIRECTLY_WRAP, $FSFILEIPC_CLOSE, $FSFILEIPC_GETSIZE, $FSFILEIPC_READ, $GSP_WRITEHWREGS, $browserver, $arm11code_loadfromsd, $FS_MOUNTSDMC;
+	global $ROPHEAP, $POPLRPC, $POPPC, $ROP_POP_R0R6PC, $ROP_POP_R1R5PC, $ROP_MEMSETOTHER, $IFile_Open, $IFile_Read, $IFile_Write, $IFile_Close, $IFile_GetSize, $THROW_FATALERR, $SRVPORT_HANDLEADR, $SRV_REFCNT, $srvpm_initialize, $srv_shutdown, $srv_GetServiceHandle, $READ_EXEFSFILE, $OPENFILEDIRECTLY_WRAP, $FSFILEIPC_CLOSE, $FSFILEIPC_GETSIZE, $FSFILEIPC_READ, $GSP_WRITEHWREGS, $browserver, $arm11code_loadfromsd, $FS_MOUNTSDMC;
 
 	$IFile_ctx = $ROPHEAP+0x80;
 	$FILEBUF = 0x18B40000;
