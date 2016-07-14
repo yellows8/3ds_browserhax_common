@@ -1165,6 +1165,11 @@ ldr r3, =0x00030040
 b HTTPC_sendcmd
 .pool
 
+HTTPC_CancelConnection:
+ldr r3, =0x00040040
+b HTTPC_sendcmd
+.pool
+
 HTTPC_BeginRequest:
 ldr r3, =0x00090040
 b HTTPC_sendcmd
@@ -1819,8 +1824,10 @@ mov r3, #0
 ldr r4, [r7, #0x18]
 blx r4 @ srv_GetServiceHandle
 cmp r0, #0
-bne http_do_request_exit0
+beq http_do_request_getsecondservhandle_init
+bl http_do_request_exit0
 
+http_do_request_getsecondservhandle_init:
 mov r4, #0
 
 add r0, sp, #24
@@ -1908,10 +1915,10 @@ ldr r1, [sp, #20]
 add r2, sp, #0
 bl HTTPC_GetResponseStatusCode @ r0=handle*, r1=ctxhandle*, r2=u32* out
 cmp r0, #0
-bne http_do_request_close
+bne http_do_request_close_error
 ldr r0, [sp, #0]
 cmp r0, #200
-bne http_do_request_close
+bne http_do_request_close_error
 
 add r0, sp, #16
 ldr r1, [sp, #20]
@@ -1919,14 +1926,14 @@ mov r2, #0
 add r3, sp, #0
 bl HTTPC_GetDownloadSizeState @ r0=handle*, r1=ctxhandle*, r2=u32* downloadedsize, r3=u32* contentsize
 cmp r0, #0
-bne http_do_request_close
+bne http_do_request_close_error
 
 ldr r0, [sp, #0]
 ldr r3, [sp, #0x58]
 str r0, [r3]
 bl calcverify_payload_size
 cmp r0, #0
-blt http_do_request_close
+blt http_do_request_close_error
 mov r3, r0
 
 mov r1, #0 @ addr
@@ -1943,6 +1950,15 @@ add r0, sp, #16
 ldr r1, [sp, #20]
 ldr r3, [sp, #0]
 bl HTTPC_ReceiveData
+
+b http_do_request_close
+
+http_do_request_close_error: @ When errors occur, use HTTPC_CancelConnection() so that HTTPC_CloseContext() doesn't hang due to HTTPC_ReceiveData() not being used.
+mov r5, r0
+add r0, sp, #16
+ldr r1, [sp, #20]
+bl HTTPC_CancelConnection
+mov r0, r5
 
 http_do_request_close:
 mov r5, r0
