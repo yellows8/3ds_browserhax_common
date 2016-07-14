@@ -54,7 +54,7 @@ blt menustubcpy
 
 ldr r0, =0x1000 @ Flush dcache for the menustub data.
 add r0, r0, r7
-ldr r1, =0x320
+ldr r1, =0x280
 ldr r3, [r7, #0x20]
 blx r3
 
@@ -123,7 +123,7 @@ b menuropbin_vramcopy_finish
 
 menuropbin_vramcopy: @ Old3DS
 mov r0, r5
-ldr r1, =0x1f500000
+ldr r1, =0x1f5f0000
 ldr r2, =0x10000
 bl gxcmd4 @ Copy the menuropbin data into VRAM, which will be loaded by the below homemenu code later.
 blx svcSleepThread_1second
@@ -165,6 +165,27 @@ ldr r0, =0x09a00000-0xd00000 @ Free some of the spider regular-heap so that ther
 ldr r1, =(0xd00000)
 bl freemem
 
+@ Locate the first bl instruction in the gxcmd4 function, then get the func-addr from that.
+ldr r0, [r7, #0x1c] @ gxcmd4 funcptr
+
+menutakeover_begin_gxcmd4findbl:
+ldr r1, [r0]
+add r0, r0, #4
+lsr r1, r1, #24
+cmp r1, #0xeb
+bne menutakeover_begin_gxcmd4findbl
+sub r0, r0, #4
+
+mov r1, #0
+blx parse_branch
+
+blx r0 @ Call the located function.
+add r0, r0, #0x58
+
+ldr r1, [r0]
+str r0, [sp, #52] @ sp+52 = state ptr, +56 = value from that addr.
+str r1, [sp, #56]
+
 add r0, sp, #12 @ Get APT:U handle, @ sp+12.
 add r1, sp, #4
 mov r2, #5
@@ -194,17 +215,35 @@ str r0, [sp, #44]
 mov r0, #0
 str r0, [sp, #48]
 
+@ Jump to menutextphys_search when the running FIRM is older than v10.4.
+ldr r0, =0x1FF80000
+ldr r0, [r0]
+lsr r0, r0, #8
+ldr r1, =((2<<24) | (50<<16) | (11<<8))
+lsr r1, r1, #8
+cmp r0, r1
+bcc menutextphys_search
+
+ldr r0, [sp, #44]
+ldr r1, =0x40000
+sub r0, r0, r1
+str r0, [sp, #44]
+
 menutextphys_search: @ v10.4 loader-process in FIRM added "randomization" for the codebin physmem of certain processes, including Home Menu.
 ldr r0, [sp, #44]
-ldr r5, =0x1f510000
+ldr r5, =0x1f3b0000
 
 mov r1, r5
-ldr r2, =0xf0000
+ldr r2, =0x240000
 mov r6, r1
 add r6, r6, r2
 sub r6, r6, #4
 ldr r4, [r6]
 bl gxcmd4 @ Copy <above size> of Home Menu .text to <outbuf>. 0x10000-bytes is the lowest possible size of a chunk with the physmem-randomization.
+
+mov r1, #0
+ldr r0, [sp, #52]
+str r1, [r0] @ Overwrite a ptr with 0x0(address of the gx command queue in sharedmem), so that other threads can't use gx cmds.
 
 waitcodevramcpy_finish: @ Wait for the above copy to completely finish.
 ldr r0, [r6]
@@ -223,7 +262,7 @@ add r0, r0, r2
 str r0, [sp, #44]
 
 //ldr r0, =0x00204BBC
-ldr r0, =0xf0000
+ldr r0, =0x240000
 ldr r1, [sp, #48]
 add r1, r1, r2
 str r1, [sp, #48]
@@ -310,12 +349,16 @@ lsl r0, r0, r3
 sub r0, r0, r4
 mov r3, r0
 
+ldr r0, [sp, #52] @ Restore the original gxcmd queue ptr.
+ldr r1, [sp, #56]
+str r1, [r0]
+
 ldr r0, =0x1000
 ldr r1, [sp, #44] @ .text+<above offset>
 add r1, r1, r3
 add r1, r1, r0
 add r0, r0, r7
-ldr r2, =0x320
+ldr r2, =0x280
 bl gxcmd4 @ Overwrite the homemenu code which handles allocating+initializing the initial heaps(the target code is near the beginning of the function).
 /*
 ldr r0, =100000
@@ -2377,7 +2420,7 @@ bl menustub_locatecode
 mov r7, r0
 
 @ Copy the menuropbin data from VRAM to the homemenu linearmem, via the GPU.
-ldr r0, =0x1f500000 @ src
+ldr r0, =0x1f5f0000 @ src
 ldr r1, =0x35040000 @ dst
 ldr r2, =0x10000 @ size
 mov r3, #0
@@ -2632,7 +2675,7 @@ menustub_apts_servicestr:
 .string "APT:S"
 .align 2
 
-.space (menustub_start + 0x320) - .
+.space (menustub_start + 0x280) - .
 menustub_end:
 .word 0
 
