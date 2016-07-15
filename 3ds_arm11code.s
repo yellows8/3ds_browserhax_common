@@ -52,9 +52,24 @@ add r0, r0, #4
 cmp r1, r2
 blt menustubcpy
 
-ldr r0, =0x1000 @ Flush dcache for the menustub data.
+blx getaddr_menustubtakeover
+mov r1, r0
+ldr r0, =(0x1000+0x320)
 add r0, r0, r7
-ldr r1, =0x280
+ldr r2, =0x280
+
+menustubtakeovercpy:
+ldr r3, [r1]
+str r3, [r0]
+add r1, r1, #4
+add r0, r0, #4
+sub r2, r2, #4
+cmp r2, #0
+bgt menustubtakeovercpy
+
+ldr r0, =0x1000 @ Flush dcache for the menustub+menustubtakeover data.
+add r0, r0, r7
+ldr r1, =(0x320+0x280)
 ldr r3, [r7, #0x20]
 blx r3
 
@@ -358,8 +373,19 @@ ldr r1, [sp, #44] @ .text+<above offset>
 add r1, r1, r3
 add r1, r1, r0
 add r0, r0, r7
+ldr r2, =0x320
+add r0, r0, r2
 ldr r2, =0x280
-bl gxcmd4 @ Overwrite the homemenu code which handles allocating+initializing the initial heaps(the target code is near the beginning of the function).
+bl gxcmd4 @ Overwrite the homemenu code which handles allocating+initializing the initial heaps(the target code is near the beginning of the function), with menustubtakeover.
+
+ldr r0, =0x1000 @ Copy menustub to .text+0x40.
+mov r2, #0x40
+ldr r1, [sp, #44]
+add r1, r1, r2
+add r0, r0, r7
+ldr r2, =0x320
+bl gxcmd4
+
 /*
 ldr r0, =100000
 mov r1, #0
@@ -2675,13 +2701,28 @@ menustub_apts_servicestr:
 .string "APT:S"
 .align 2
 
-.space (menustub_start + 0x280) - .
+.space (menustub_start + 0x320) - .
 menustub_end:
 .word 0
 
 getaddrs_menustub_end:
 adr r1, menustub_end
 bx lr
+
+getaddr_menustubtakeover:
+adr r0, menustubtakeover_start
+bx lr
+
+menustubtakeover_start: @ This is the code which initially runs under Home Menu. This executes svcSleepThread to delay a bit to make sure that the menustub copy finished, then it jumps to menustub.
+.space 0x260 @ NOP-sled
+ldr r0, =100000000 @ .1s delay
+mov r1, #0
+svc 0x0a
+ldr pc, =0x00100040
+.pool
+.space (menustubtakeover_start + 0x280) - .
+menustubtakeover_end:
+.word 0
 
 getaddrsize_rootcacert_embed:
 adr r0, rootcacert_embed_start

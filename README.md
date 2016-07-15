@@ -78,7 +78,7 @@ This loader will initially try to load the hblauncher ropbin payload from SD-car
 If loading from SD fails, this loader will then automatically detect the required payload, then download it with HTTP. This latter method is highly recommended(unless this method doesn't work well for the user): with a "/boot.3dsx" on SD card, there's zero other setup/user-input needed once the browserhax is triggered successfully.  
 When loading the payload with both of the above methods fails, a crash will be triggered.
 
-Hanging at an gray-bottom-screen means \*hax payload loading failed, normally this is due to network issues(you should reboot your system when this happens).
+Hanging/crashing at an gray-bottom-screen means \*hax payload loading failed, normally this is due to network issues(you should reboot your system when this happens).
 
 The loader for Old3DS runs actual native code under the context of Home Menu, if you really want to run your own code under Home Menu you can modify that code in the loader. This code runs very early in the Home Menu process boot.
 
