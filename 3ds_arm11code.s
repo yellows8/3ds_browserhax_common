@@ -924,6 +924,9 @@ ldr r3, =0xDEADCAFE
 cmp r2, r3
 beq inject_payload_lpnext
 
+cmp r0, #0x38
+beq inject_payload_lpnext @ Don't corrupt a ptr which Home Menu may use in some cases(this should be value0 anyway). In particular, this fixes a crash with Home Menu where theme shuffling is enabled.
+
 str r2, [r6, r0]
 
 inject_payload_lpnext:
