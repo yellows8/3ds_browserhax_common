@@ -20,7 +20,8 @@ Old3DS system Internet Browser(spider) (see also http://3dbrew.org/wiki/Internet
 * 1.7610 v6149 9.9.0-26..10.1.0-27 CHN, KOR, and TWN are also supported for this.
 * 1.7616 v7168 10.2.0-28..10.5.0-30 CHN, KOR, and TWN are also supported for this.
 * 1.7622 v8192 10.6.0-31 CHN, KOR, and TWN are also supported for this.
-* 1.7625 v9232 10.7.0-32 CHN, KOR, and TWN are also supported for this. Handled the same way as 1.7622.
+* 1.7625 v9232 10.7.0-32..11.0.0-33 CHN, KOR, and TWN are also supported for this. Handled the same way as 1.7622.
+* 1.7630 v10240 11.1.0-34
 
 New3DS system Internet Browser(SKATER) (see also http://3dbrew.org/wiki/Internet_Browser#User-Agent_and_Browser_Versions):
 * 1.0.9934 v10    9.0.0-20..9.2.0-20
@@ -30,7 +31,7 @@ New3DS system Internet Browser(SKATER) (see also http://3dbrew.org/wiki/Internet
 * 1.4.10138 v4096 10.2.0-28..10.3.0-28 KOR is also supported for this.
 * 1.5.10143 v5121 10.4.0-29..10.5.0-30 KOR is also supported for this.
 * 1.6.10147 v6144 10.6.0-31 KOR is "supported" for this but it's not tested.
-* 1.7.10150 v7184 10.7.0-32 KOR is also supported for this.
+* 1.7.10150 v7184 10.7.0-32..11.0.0-33 KOR is also supported for this.
 
 # Exploit testing
 If you want to test a browser exploit on an unsupported browser version just to see if it at least crashes, you can use this: "URL?browserver={ver}". Where ver is one of the browservers listed in 3dsbrowserhax_common.php, such as "85" for New3DS or "7" for Old3DS(without quotes), or whatever versions the exploit page supports.
